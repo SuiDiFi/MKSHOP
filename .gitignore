@@ -1,0 +1,27 @@
+# ThinkPHP
+/vendor/
+/runtime/
+/.env
+/public/uploads/
+
+# 前端
+node_modules/
+dist/
+.admin-web/
+*.local
+
+# IDE / 系统
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store
+
+# 凭据与密钥（严禁入库）
+*.pem
+*.key
+deploy/secrets/
+docker/.env
+
+# 日志
+*.log

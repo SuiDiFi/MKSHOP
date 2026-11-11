@@ -1,0 +1,46 @@
+{
+    "name": "mkshop/mkshop",
+    "description": "MKSHOP 虚拟商品电商系统",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "topthink/framework": "^6.1.3",
+        "topthink/think-multi-app": "^1.0",
+        "topthink/think-orm": "^2.0",
+        "topthink/think-queue": "^3.0",
+        "topthink/think-swoole": "^4.0",
+        "topthink/think-view": "^1.0",
+        "phpoffice/phpspreadsheet": "^1.29",
+        "ext-json": "*",
+        "ext-redis": "*",
+        "ext-bcmath": "*",
+        "ext-gd": "*",
+        "ext-fileinfo": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "squizlabs/php_codesniffer": "^3.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": "app",
+            "mks\\": "mks"
+        },
+        "psr-0": {
+            "": "extend/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "optimize-autoloader": true
+    },
+    "extra": {
+        "think": {
+            "services": []
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
