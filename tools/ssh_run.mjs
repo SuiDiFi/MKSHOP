@@ -13,8 +13,11 @@ const host = (info.match(/(\d+\.\d+\.\d+\.\d+)/) || [])[1];
 const pass = (info.match(/root密码[：:]\s*(\S+)/) || [])[1];
 if (!host || !pass) { console.error('FAIL: 无法从服务器信息文件解析 IP/密码'); process.exit(1); }
 
-const cmd = process.argv[2];
-const timeoutSec = Number(process.argv[3] || 600);
+// 命令来源：-f <文件>（推荐，PowerShell 引号安全）或 argv[2]
+const cmd = process.argv[2] === '-f'
+  ? readFileSync(process.argv[3], 'utf8')
+  : process.argv[2];
+const timeoutSec = Number(process.env.MKSSH_TIMEOUT || 600);
 
 const conn = new Client();
 conn.on('ready', () => {
