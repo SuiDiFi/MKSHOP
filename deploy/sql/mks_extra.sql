@@ -4,7 +4,9 @@
 -- 可重复执行（幂等）。
 -- 字典码值来源：config/kss.php 的 *_select 数组（明文权威来源）；
 -- 其余枚举组在 M2 实现时按 01b-枚举与配置字典.md 补齐。
+-- 注：SET NAMES 必须显式声明——CLI 管道导入时客户端字符集默认非 utf8mb4，否则中文乱码入库
 -- ============================================================================
+SET NAMES utf8mb4;
 
 -- 1. 字典表（19 组枚举的统一落点，前后端文案/标签色统一取此表）
 CREATE TABLE IF NOT EXISTS `mks_sys_dict` (
@@ -68,8 +70,14 @@ INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`auth_ty
   (0, '字典删除',        100, 'sys_dict_delete',       2, 'sys/dict_delete',    'POST', 0),
   (0, '配置分组清单',    100, 'sys_config_group_list', 2, 'sys/config_group_list', 'GET', 0);
 
+-- 4.2 MKSHOP 新增可见菜单（挂权限管理(64)下）：字典管理 / 菜单管理
+INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`) VALUES
+  (64, '字典管理', 90, 'MksDictList', 'dict', 'collection', '@/views/setting/dict', 1, '', '', 0),
+  (64, '菜单管理', 89, 'MksMenuList', 'menulist', 'menu', '@/views/setting/userManagement/menuList', 1, '', '', 0);
+
 -- 5. 字典种子：核心枚举（来源 config/kss.php，码值精确）
-INSERT IGNORE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES
+-- REPLACE 自愈：若历史导入因客户端字符集错误产生乱码行，重导即按唯一键覆盖修复
+REPLACE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES
   -- 商品类型 goods_type
   ('goods_type','1','卡密商品',1),('goods_type','2','虚拟商品',2),('goods_type','3','实物商品',3),
   -- 供货方式 provide_type

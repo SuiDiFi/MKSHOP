@@ -1,0 +1,64 @@
+import { mksRequest } from '@/utils/request';
+
+/** 后台登录 */
+export const login = (username, password) =>
+  mksRequest('/admin/login/login', 'POST', {}, { username, password });
+
+/** 我的信息 */
+export const getInfo = () => mksRequest('/admin/login/getInfo');
+
+/** 后台菜单树 */
+export const getMenus = () => mksRequest('/admin/login/getMenus');
+
+/** 登出 */
+export const logout = () => mksRequest('/admin/login/logout', 'POST');
+
+// ─── 管理员管理（注意：admin 模块 api_url 本身为 admin/*，故 URL 双层前缀 /admin/admin/*）───
+export const adminIndex = (params) => mksRequest('/admin/admin/index', 'GET', params);
+export const adminRead = (id) => mksRequest(`/admin/admin/read/${id}`);
+export const adminCreate = (form) => mksRequest('/admin/admin/create', 'POST', {}, { form });
+export const adminSave = (id, form) => mksRequest(`/admin/admin/save/${id}`, 'POST', {}, { form });
+export const adminDelete = (id) => mksRequest(`/admin/admin/delete/${id}`, 'POST');
+export const adminModify = (id, field, value) =>
+  mksRequest(`/admin/admin/modify/${id}`, 'POST', {}, { field, value });
+export const adminDoLog = (params) => mksRequest('/admin/admin/do_log', 'GET', params);
+export const adminLoginLog = (params) => mksRequest('/admin/admin/login_log', 'GET', params);
+export const adminLoginStatus = (params) => mksRequest('/admin/admin/login_status', 'GET', params);
+export const adminDelLoginStatus = (id) => mksRequest('/admin/admin/del_login_status', 'POST', {}, { id });
+
+// ─── 角色管理 ───
+export const roleIndex = (params) => mksRequest('/admin/role/index', 'GET', params);
+export const roleList = (params) => mksRequest('/admin/role/list', 'POST', {}, params);
+export const roleRead = (id) => mksRequest(`/admin/role/read/${id}`);
+export const roleCreate = (form) => mksRequest('/admin/role/create', 'POST', {}, { form });
+export const roleSave = (id, form) => mksRequest(`/admin/role/save/${id}`, 'POST', {}, { form });
+export const roleDelete = (id) => mksRequest(`/admin/role/delete/${id}`, 'POST');
+export const roleModifyPerms = (id, role) =>
+  mksRequest(`/admin/role/modify_role/${id}`, 'POST', {}, { role });
+
+// ─── 菜单/权限管理 ───
+export const routerIndex = (params) => mksRequest('/admin/router/index', 'GET', params);
+export const routerRead = (id) => mksRequest(`/admin/router/read/${id}`);
+export const routerCreate = (form) => mksRequest('/admin/router/create', 'POST', {}, { form });
+export const routerSave = (id, form) => mksRequest(`/admin/router/save/${id}`, 'POST', {}, { form });
+export const routerDelete = (id) => mksRequest(`/admin/router/delete/${id}`, 'POST');
+
+// ─── 系统配置中心 + 字典 ───
+export const configGroupList = () => mksRequest('/admin/sys/config_group_list');
+export const configGroupForm = (group) => mksRequest('/admin/sys/config_group_form', 'GET', { group });
+export const saveConfigGroup = (group, form) =>
+  mksRequest('/admin/sys/save_config_group', 'POST', {}, { group, form });
+export const dictOptions = (type) => mksRequest('/admin/sys/dict_options', 'GET', { type });
+export const dictIndex = (params) => mksRequest('/admin/sys/dict_index', 'GET', params);
+export const dictSave = (form, id = 0) => mksRequest('/admin/sys/dict_save', 'POST', {}, { form, id });
+export const dictDelete = (id) => mksRequest('/admin/sys/dict_delete', 'POST', {}, { id });
+
+// ─── 定时任务 ───
+export const timerIndex = (params) => mksRequest('/admin/sys_timer/index', 'GET', params);
+export const timerRead = (id) => mksRequest(`/admin/sys_timer/read/${id}`);
+export const timerTaskName = () => mksRequest('/admin/sys_timer/task_name', 'POST');
+export const timerCreate = (form) => mksRequest('/admin/sys_timer/create', 'POST', {}, { form });
+export const timerSave = (id, form) => mksRequest(`/admin/sys_timer/save/${id}`, 'POST', {}, { form });
+export const timerDelete = (id) => mksRequest(`/admin/sys_timer/delete/${id}`, 'POST');
+export const timerModify = (id, field, value) =>
+  mksRequest(`/admin/sys_timer/modify/${id}`, 'POST', {}, { field, value });

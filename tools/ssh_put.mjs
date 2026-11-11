@@ -22,7 +22,7 @@ function expand(p, base = '') {
   const st = statSync(p);
   const norm = (s) => s.replace(/\\/g, '/');
   if (st.isFile()) {
-    const rel = base !== '' ? posix.join(norm(base), norm(p).split('/').pop()) : norm(p);
+    const rel = base !== '' ? posix.join(norm(base), norm(p).split('/').pop()) : norm(p).split('/').pop();
     return [{ local: p, remote: rel }];
   }
   const out = [];
