@@ -1,0 +1,39 @@
+# KASUSHOU 2.0 API 协议文档（官方抓取存档）
+
+> 抓取时间：2026-11-11 · 来源 doc.kasushou.com/api/v2api · 用途：M3 上游对接适配器协议规格 + 自有 /dockapi 兼容目标
+
+- [11-用户加款](kasushou-v2api/11-%E7%94%A8%E6%88%B7%E5%8A%A0%E6%AC%BE.md) — 来源 /api/v2api/115
+- [60-供货接口](kasushou-v2api/60-%E4%BE%9B%E8%B4%A7%E6%8E%A5%E5%8F%A3.md) — 来源 /api/v2api/134
+- [61-商家订单列表](kasushou-v2api/61-%E5%95%86%E5%AE%B6%E8%AE%A2%E5%8D%95%E5%88%97%E8%A1%A8.md) — 来源 /api/v2api/135
+- [62-商家订单处理](kasushou-v2api/62-%E5%95%86%E5%AE%B6%E8%AE%A2%E5%8D%95%E5%A4%84%E7%90%86.md) — 来源 /api/v2api/137
+- [63-商家售后列表](kasushou-v2api/63-%E5%95%86%E5%AE%B6%E5%94%AE%E5%90%8E%E5%88%97%E8%A1%A8.md) — 来源 /api/v2api/138
+- [64-商家售后详情](kasushou-v2api/64-%E5%95%86%E5%AE%B6%E5%94%AE%E5%90%8E%E8%AF%A6%E6%83%85.md) — 来源 /api/v2api/139
+- [65-商家售后处理](kasushou-v2api/65-%E5%95%86%E5%AE%B6%E5%94%AE%E5%90%8E%E5%A4%84%E7%90%86.md) — 来源 /api/v2api/140
+- [25-商品变更通知](kasushou-v2api/25-%E5%95%86%E5%93%81%E5%8F%98%E6%9B%B4%E9%80%9A%E7%9F%A5.md) — 来源 /api/v2api/143
+- [35-订单撤单](kasushou-v2api/35-%E8%AE%A2%E5%8D%95%E6%92%A4%E5%8D%95.md) — 来源 /api/v2api/145
+- [40-售后申请](kasushou-v2api/40-%E5%94%AE%E5%90%8E%E7%94%B3%E8%AF%B7.md) — 来源 /api/v2api/146
+- [41-售后处理回调](kasushou-v2api/41-%E5%94%AE%E5%90%8E%E5%A4%84%E7%90%86%E5%9B%9E%E8%B0%83.md) — 来源 /api/v2api/147
+- [42-售后列表](kasushou-v2api/42-%E5%94%AE%E5%90%8E%E5%88%97%E8%A1%A8.md) — 来源 /api/v2api/148
+- [43-售后详情](kasushou-v2api/43-%E5%94%AE%E5%90%8E%E8%AF%A6%E6%83%85.md) — 来源 /api/v2api/149
+- [44-售后处理](kasushou-v2api/44-%E5%94%AE%E5%90%8E%E5%A4%84%E7%90%86.md) — 来源 /api/v2api/150
+- [26-商品下单模板](kasushou-v2api/26-%E5%95%86%E5%93%81%E4%B8%8B%E5%8D%95%E6%A8%A1%E6%9D%BF.md) — 来源 /api/v2api/151
+- [34-订单列表](kasushou-v2api/34-%E8%AE%A2%E5%8D%95%E5%88%97%E8%A1%A8.md) — 来源 /api/v2api/161
+- [36-订单撤单回调](kasushou-v2api/36-%E8%AE%A2%E5%8D%95%E6%92%A4%E5%8D%95%E5%9B%9E%E8%B0%83.md) — 来源 /api/v2api/162
+- [00-平台简介](kasushou-v2api/00-%E5%B9%B3%E5%8F%B0%E7%AE%80%E4%BB%8B.md) — 来源 /api/v2api/33
+- [01-开发指南](kasushou-v2api/01-%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.md) — 来源 /api/v2api/34
+- [02-基础数据](kasushou-v2api/02-%E5%9F%BA%E7%A1%80%E6%95%B0%E6%8D%AE.md) — 来源 /api/v2api/38
+- [03-签名规范](kasushou-v2api/03-%E7%AD%BE%E5%90%8D%E8%A7%84%E8%8C%83.md) — 来源 /api/v2api/39
+- [04-全局状态码](kasushou-v2api/04-%E5%85%A8%E5%B1%80%E7%8A%B6%E6%80%81%E7%A0%81.md) — 来源 /api/v2api/40
+- [10-用户余额查询](kasushou-v2api/10-%E7%94%A8%E6%88%B7%E4%BD%99%E9%A2%9D%E6%9F%A5%E8%AF%A2.md) — 来源 /api/v2api/41
+- [20-商品接口](kasushou-v2api/20-%E5%95%86%E5%93%81%E6%8E%A5%E5%8F%A3.md) — 来源 /api/v2api/42
+- [21-商品分类列表](kasushou-v2api/21-%E5%95%86%E5%93%81%E5%88%86%E7%B1%BB%E5%88%97%E8%A1%A8.md) — 来源 /api/v2api/43
+- [22-商品列表](kasushou-v2api/22-%E5%95%86%E5%93%81%E5%88%97%E8%A1%A8.md) — 来源 /api/v2api/44
+- [23-商品详情](kasushou-v2api/23-%E5%95%86%E5%93%81%E8%AF%A6%E6%83%85.md) — 来源 /api/v2api/45
+- [24-商品调价记录](kasushou-v2api/24-%E5%95%86%E5%93%81%E8%B0%83%E4%BB%B7%E8%AE%B0%E5%BD%95.md) — 来源 /api/v2api/46
+- [30-订单接口](kasushou-v2api/30-%E8%AE%A2%E5%8D%95%E6%8E%A5%E5%8F%A3.md) — 来源 /api/v2api/47
+- [31-订单提交](kasushou-v2api/31-%E8%AE%A2%E5%8D%95%E6%8F%90%E4%BA%A4.md) — 来源 /api/v2api/48
+- [32-订单详情](kasushou-v2api/32-%E8%AE%A2%E5%8D%95%E8%AF%A6%E6%83%85.md) — 来源 /api/v2api/49
+- [33-订单异步回调](kasushou-v2api/33-%E8%AE%A2%E5%8D%95%E5%BC%82%E6%AD%A5%E5%9B%9E%E8%B0%83.md) — 来源 /api/v2api/50
+- [50-后台接口](kasushou-v2api/50-%E5%90%8E%E5%8F%B0%E6%8E%A5%E5%8F%A3.md) — 来源 /api/v2api/59
+- [51-获取订单](kasushou-v2api/51-%E8%8E%B7%E5%8F%96%E8%AE%A2%E5%8D%95.md) — 来源 /api/v2api/60
+- [52-处理订单](kasushou-v2api/52-%E5%A4%84%E7%90%86%E8%AE%A2%E5%8D%95.md) — 来源 /api/v2api/61
