@@ -34,4 +34,20 @@ class Member extends BaseModel
     {
         return password_verify($plain, (string) $this->getAttr('password'));
     }
+
+    /**
+     * API 密钥加密入库（AES-GCM；dockapi 下游验签用）
+     */
+    public function setIncomeKeyAttr($value)
+    {
+        return $value === '' ? '' : \mks\util\Crypt::encrypt((string) $value);
+    }
+
+    /**
+     * API 密钥明文（用于 dockapi 验签；红线：仅服务层调用，不外露）
+     */
+    public function getIncomeKeyPlain(): string
+    {
+        return \mks\util\Crypt::decrypt((string) $this->getAttr('income_key'));
+    }
 }
