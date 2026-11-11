@@ -1,6 +1,18 @@
-# 上游供货渠道对接（M3 规格 · 来自 KASUSHOU 源码提取）
+# 上游供货渠道对接（M3 规格 · 来自 KASUSHOU 源码提取 + 官方 API 文档）
 
 > 数据来源：`config/kss.php` docking_list、`_deobf/route/dockapi.php`、`_deobf/app/common/logic/OrderLogic.php`、`_analysis/04-核心业务逻辑.md §5-7`
+> **协议权威规格：`docs/kasushou-v2api/`（官方文档 35 页抓取存档，索引见 KASUSHOU-V2API-INDEX.md）**
+> 卡速售 2.0 API 是卡密供货行业的事实标准协议——绝大多数上游渠道（同行业系统）均兼容此协议，MKSHOP 的上游适配器以它为第一适配目标。
+
+## 0. 官方协议核心（v2api，M3 适配器必须实现）
+
+- **签名**：`sign = sha1(13位毫秒时间戳 + ksort(body)的JSON(UNESCAPED_SLASHES|UNESCAPED_UNICODE) + apikey)`；body 为空时用 `{}` 参与签名；Header 三件套：`Sign` / `Timestamp` / `UserId`（appid）
+- **异步下单模型**：`POST /api/v1/order/buy` 下单成功 ≠ 充值成功；必须实现「订单详情轮询（间隔 1~3s）」+「异步回调」双通道取卡；`card_list` 仅卡密订单返回
+- **上游订单状态**：1等待处理 / 2正在处理 / 3交易成功 / 4取消交易 / 5已退款 / -1未支付 → 需要做「上游状态 ↔ MKSHOP 内部 order_status」映射表
+- **safe_price 安全价**：下单可传安全价（不能小于总售价），上游调价时拒单防亏本——适配器必须支持
+- **attach 下单模板参数**：直充类商品的动态参数（recharge_account、lblName1…），对应 `mks_order_tpl` 模板体系
+- **双向角色**：同一套协议既是「用户接口」（我们调上游）也是「商家/供货接口」（上游调用我们）——MKSHOP 自身的 `/dockapi` 须实现供货侧（商家订单列表/处理、售后列表/处理、获取订单/处理订单）
+- **回调验签**：回调地址按原样参与签名，我们的回调接收端必须验签 + 幂等
 
 ## 1. 对接双通道
 
