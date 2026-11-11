@@ -10,6 +10,7 @@ namespace app\controller\admin;
 
 use app\common\model\Goods;
 use app\common\model\GoodsCategory;
+use app\common\model\GoodsStock;
 use app\common\model\GoodsTags;
 use app\common\model\SysDict;
 use mks\traits\CurdTrait;
@@ -189,6 +190,45 @@ class GoodsController extends Base
             return $this->fail('排序失败：' . $e->getMessage());
         }
         return $this->ok([], '排序已更新');
+    }
+
+    /**
+     * 保存卡密库存桥（对齐权限点 goods/save_goods_stock）
+     * 卡密商品 → goods_stock(type=1) 绑定卡密库；goods.stock_num 同步卡库余量
+     * POST {goods_id, card_cate_id}
+     */
+    public function save_goods_stock()
+    {
+        $goodsId   = (int) $this->request->param('goods_id', 0);
+        $cardCateId = (int) $this->request->param('card_cate_id', 0);
+        $goods = Goods::findOrEmpty($goodsId);
+        if ($goods->isEmpty()) {
+            return $this->fail('商品不存在');
+        }
+        $cate = \app\common\model\CardCate::findOrEmpty($cardCateId);
+        if ($cate->isEmpty()) {
+            return $this->fail('卡密库不存在');
+        }
+        $stock = GoodsStock::where('goods_id', $goodsId)->where('type', 1)->findOrEmpty();        $data  = [
+            'uid'          => 0,
+            'type'         => 1,
+            'name'         => (string) $cate->getAttr('name'),
+            'goods_id'     => $goodsId,
+            'card_cate_id' => $cardCateId,
+            'cost_value'   => (string) $cate->getAttr('cost'),
+            'stock_num'    => (int) $cate->getAttr('card_num'),
+            'status'       => 1,
+        ];
+        if ($stock->isEmpty()) {
+            $stock = new GoodsStock();
+            $data['create_time'] = time();
+            $stock->save($data);
+        } else {
+            $stock->save($data);
+        }
+        // 商品冗余库存同步
+        Goods::where('id', $goodsId)->update(['stock_num' => (int) $cate->getAttr('card_num')]);
+        return $this->ok($stock, '库存已绑定卡密库');
     }
 
     /**

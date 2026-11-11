@@ -108,3 +108,14 @@ export const tagsSave = (id, form) => mksRequest(`/admin/goods_tags/save/${id}`,
 export const tagsDelete = (id) => mksRequest(`/admin/goods_tags/delete/${id}`, 'POST');
 export const tagsModify = (id, field, value) =>
   mksRequest(`/admin/goods_tags/modify/${id}`, 'POST', {}, { field, value });
+
+// ─── 订单管理（M2）───
+export const orderIndex = (params) => mksRequest('/admin/order/index', 'GET', params);
+export const orderInfo = (id) => mksRequest(`/admin/order/info/${id}`);
+export const orderGoodsCards = (id) => mksRequest(`/admin/order/goods/${id}`);
+export const orderDual = (id, data) => mksRequest(`/admin/order/dual/${id}`, 'POST', {}, data);
+export const orderDelete = (id) => mksRequest(`/admin/order/delete/${id}`, 'POST');
+export const orderModify = (id, field, value) =>
+  mksRequest(`/admin/order/modify/${id}`, 'POST', {}, { field, value });
+export const orderStatusType = () => mksRequest('/admin/order/status_type', 'POST');
+export const orderPayType = () => mksRequest('/admin/order/pay_type', 'POST');

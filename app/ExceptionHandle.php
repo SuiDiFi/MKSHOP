@@ -35,6 +35,11 @@ class ExceptionHandle extends Handle
             return json_fail($e->getError(), 422);
         }
 
+        // 业务异常（throw_fail）：统一 JSON，HTTP 200 + 业务码（对齐 fail() 语义）
+        if ($e instanceof \mks\exception\BizException) {
+            return json_fail($e->getMessage(), 200, $e->getCode() ?: 1);
+        }
+
         // HTTP 异常
         if ($e instanceof HttpException) {
             $code = $e->getStatusCode();

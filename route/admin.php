@@ -88,6 +88,7 @@ Route::group('admin', function () {
         Route::post('goods/restore/:id', 'admin.GoodsController/restore');
         Route::post('goods/modify/:id', 'admin.GoodsController/modify');
         Route::post('goods/sort', 'admin.GoodsController/sort');
+        Route::post('goods/save_goods_stock', 'admin.GoodsController/save_goods_stock');
         Route::post('goods/status_type', 'admin.GoodsController/status_type');
         Route::post('goods/goods_type', 'admin.GoodsController/goods_type');
         Route::post('goods/provide_type', 'admin.GoodsController/provide_type');
@@ -121,6 +122,17 @@ Route::group('admin', function () {
         Route::post('goods_tags/save/:id', 'admin.GoodsTagsController/save');
         Route::post('goods_tags/delete/:id', 'admin.GoodsTagsController/delete');
         Route::post('goods_tags/modify/:id', 'admin.GoodsTagsController/modify');
+
+        // ── M2 交易模块 ──────────────────────────────────────
+        // 订单管理（权限点 order/*）
+        Route::get('order/index', 'admin.OrderController/index');
+        Route::get('order/info/:id', 'admin.OrderController/info');
+        Route::get('order/goods/:id', 'admin.OrderController/goods');
+        Route::post('order/dual/:id', 'admin.OrderController/dual');
+        Route::post('order/delete/:id', 'admin.OrderController/delete');
+        Route::post('order/modify/:id', 'admin.OrderController/modify');
+        Route::post('order/status_type', 'admin.OrderController/status_type');
+        Route::post('order/pay_type', 'admin.OrderController/pay_type');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,

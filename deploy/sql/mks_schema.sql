@@ -219,7 +219,7 @@ CREATE TABLE `mks_member` (
   `username` varchar(80) NOT NULL COMMENT '登录账号（唯一索引）',
   `sex` enum('0','1','2') NOT NULL DEFAULT '0' COMMENT '性别 enum(''0'',''1'',''2'')：0=未知 1=男 2=女',
   `profile` varchar(255) NOT NULL DEFAULT '' COMMENT '个人简介',
-  `password` varchar(32) NOT NULL DEFAULT '' COMMENT '登录密码（32位，MD5/salt 组合，见 salt）',
+  `password` varchar(255) NOT NULL DEFAULT '' COMMENT '登录密码（MKSHOP 自研：bcrypt；原库 varchar(32)=md5+salt，重写无存量数据故统一 bcrypt）',
   `password_open` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用密码登录',
   `trade_password` varchar(255) NOT NULL DEFAULT '' COMMENT '交易密码（提现/改价二次验证）',
   `trade_password_open` tinyint(1) NOT NULL DEFAULT 1 COMMENT '交易密码开关',
