@@ -13,6 +13,18 @@ use mks\BaseController;
 class GoodsController extends BaseController
 {
     /**
+     * 分类列表（前台导航：仅启用分类，含商品计数冗余）
+     */
+    public function cates()
+    {
+        $rows = \app\common\model\GoodsCategory::where('status', 1)
+            ->order('sort desc, id asc')
+            ->field('id,pid,name,goods_num')
+            ->select()->toArray();
+        return $this->ok($rows);
+    }
+
+    /**
      * 在售商品列表
      */
     public function index()

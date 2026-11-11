@@ -14,6 +14,7 @@ Route::group('front', function () {
         Route::post('member/register', 'front.MemberController/register'); // 注册（M4：支持邀请码）
         Route::get('goods/index', 'front.GoodsController/index');        // 在售商品列表
         Route::get('goods/read/:id', 'front.GoodsController/read');      // 商品详情
+        Route::get('goods/cates', 'front.GoodsController/cates');        // 分类导航
     });
 
     // ── 登录组 ──
