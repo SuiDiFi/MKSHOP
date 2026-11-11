@@ -56,10 +56,17 @@ CREATE TABLE IF NOT EXISTS `mks_failed_jobs` (
 
 -- 4. 会话管理白名单（登录态必需、不做 RBAC 权限点检查的接口）
 INSERT IGNORE INTO `mks_api_permission` (`path`,`methods`,`title`,`group`) VALUES
-  ('login/logout',  'POST', '登出',          'admin'),
-  ('login/getInfo', 'GET',  '我的信息',      'admin'),
-  ('login/getMenus','GET',  '后台菜单树',    'admin'),
-  ('dict/options',  'GET',  '字典选项（公共下拉）', 'admin');
+  ('login/logout',        'POST', '登出',       'admin'),
+  ('login/getInfo',       'GET',  '我的信息',   'admin'),
+  ('login/getMenus',      'GET',  '后台菜单树', 'admin'),
+  ('sys/dict_options',    'GET',  '字典选项（公共下拉）', 'admin');
+
+-- 4.1 MKSHOP 新增模块的权限点（原系统无字典管理；配置分组清单为新增）
+INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`auth_type`,`api_url`,`methods`,`delete_time`) VALUES
+  (0, '字典列表',        100, 'sys_dict_index',        2, 'sys/dict_index',     'GET',  0),
+  (0, '字典保存',        100, 'sys_dict_save',         2, 'sys/dict_save',      'POST', 0),
+  (0, '字典删除',        100, 'sys_dict_delete',       2, 'sys/dict_delete',    'POST', 0),
+  (0, '配置分组清单',    100, 'sys_config_group_list', 2, 'sys/config_group_list', 'GET', 0);
 
 -- 5. 字典种子：核心枚举（来源 config/kss.php，码值精确）
 INSERT IGNORE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES
