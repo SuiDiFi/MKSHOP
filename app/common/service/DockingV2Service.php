@@ -178,9 +178,17 @@ class DockingV2Service
         try {
             $result = self::buy($docking, $stock, $order);
         } catch (\Throwable $e) {
-            // 渠道失败：清除标记，等待人工/回退
-            Order::where('id', (int) $order->getAttr('id'))->update(['docking_info' => '', 'update_time' => time()]);
-            OrderService::log($order, '渠道下单失败：' . $e->getMessage());
+            // 渠道失败：完整回滚渠道标记（保证下次补单乐观 update 值有变化，affected>0 可重新提交）
+            Order::where('id', (int) $order->getAttr('id'))->update([
+                'docking_info'          => '',
+                'docking_id'            => 0,
+                'docking_type'          => '',
+                'docking_goods_id'      => '0',
+                'docking_goods_sku_id'  => '',
+                'has_sync'              => 0,
+                'update_time'           => time(),
+            ]);
+            self::log($order, '渠道下单失败：' . $e->getMessage());
             throw $e;
         }
         $cost = (string) ($result['total_price'] !== '' ? $result['total_price'] : $order->getAttr('total_price'));
@@ -226,19 +234,36 @@ class DockingV2Service
         if ($remote === null) {
             throw_fail('渠道侧未查到该订单', 1);
         }
-        $remoteStatus = (int) ($remote['status'] ?? 0);
-        $cards        = (array) ($remote['card_list'] ?? []);
-        $hints        = (string) ($remote['recharge_hints'] ?? '');
-        $backMoney    = (string) ($remote['has_back_money'] ?? '0');
-        $local        = (int) $order->getAttr('status');
-        $changed      = [];
+        return self::applyRemote(
+            $order,
+            (int) ($remote['status'] ?? 0),
+            (array) ($remote['card_list'] ?? []),
+            (string) ($remote['recharge_hints'] ?? ''),
+            (string) ($remote['has_back_money'] ?? '0'),
+            [
+                'start_progress'   => (string) ($remote['start_progress'] ?? ''),
+                'current_progress' => (string) ($remote['current_progress'] ?? ''),
+                'target_progress'  => (string) ($remote['target_progress'] ?? ''),
+            ]
+        );
+    }
+
+    /**
+     * 上游状态推进（拉模式 syncOrder 与推模式 回调 共用核心）
+     * @param int    $remoteStatus 上游状态 1等待 2处理中 3成功 4取消 5退款
+     * @param array  $cards        上游回卡 card_list
+     * @param string $hints        处理信息
+     * @param string $backMoney    上游已退款金额
+     * @param array  $progress     进度 {start_progress, current_progress, target_progress}
+     * @return array{changed:string[], remote_status:int, status:int, cards:int}
+     */
+    public static function applyRemote(Order $order, int $remoteStatus, array $cards, string $hints, string $backMoney, array $progress = []): array
+    {
+        $local   = (int) $order->getAttr('status');
+        $changed = [];
 
         // 进度字段透传
-        $progress = array_filter([
-            'start_progress'   => (string) ($remote['start_progress'] ?? ''),
-            'current_progress' => (string) ($remote['current_progress'] ?? ''),
-            'target_progress'  => (string) ($remote['target_progress'] ?? ''),
-        ], fn ($v) => $v !== '');
+        $progress = array_filter($progress, fn ($v) => $v !== '');
         if ($progress !== []) {
             Order::where('id', (int) $order->getAttr('id'))->update($progress + ['update_time' => time()]);
             $changed[] = '进度更新';
@@ -253,6 +278,11 @@ class DockingV2Service
                 ->whereNotIn('status', [Order::ST_SUCCESS])
                 ->update(['status' => Order::ST_SUCCESS, 'finish_time' => time(), 'update_time' => time()]);
             $changed[] = '渠道成功→交易成功' . ($cards !== [] ? '（补卡 ' . count($cards) . ' 张）' : '');
+        } elseif ($remoteStatus === 3 && $local === Order::ST_SUCCESS && $cards !== []) {
+            // 已成功订单收到补卡回调（上游部分发货后补齐）；saveDockingCards 内部按差额补卡且 md5 去重，天然幂等
+            self::saveDockingCards($order, $cards);
+            Order::where('id', (int) $order->getAttr('id'))->update(['docking_status' => 5, 'update_time' => time()]);
+            $changed[] = '已成功订单补卡';
         } elseif ($remoteStatus === 2 && $local === Order::ST_WAIT_DEAL) {
             Order::where('id', (int) $order->getAttr('id'))->where('status', Order::ST_WAIT_DEAL)
                 ->update(['status' => Order::ST_DEALING, 'update_time' => time()]);
@@ -300,20 +330,36 @@ class DockingV2Service
     }
 
     /**
-     * 渠道卡密入库（幂等：该订单已有卡则跳过）
+     * 渠道卡密入库（幂等 + 部分补卡：已有 N 张补足 quantity，card_no_md5 去重防重复入库）
      */
     protected static function saveDockingCards(Order $order, array $cardList): void
     {
-        $exists = Card::where('order_id', (int) $order->getAttr('id'))->count();
-        if ($exists > 0) {
-            return; // 幂等
+        $quantity = max(1, (int) $order->getAttr('quantity'));
+        $exists   = Card::where('order_id', (int) $order->getAttr('id'))->count();
+        $need     = $quantity - (int) $exists;
+        if ($need <= 0) {
+            return; // 已足量，幂等
         }
-        $rows = [];
+        $existingMd5 = Card::where('order_id', (int) $order->getAttr('id'))->column('card_no_md5');
+        $existingMd5 = array_filter($existingMd5);
+        $rows   = [];
+        $dupeMd5 = [];
         foreach ($cardList as $c) {
+            if (count($rows) >= $need) {
+                break; // 只补差额
+            }
             $no  = trim((string) ($c['card_no'] ?? ''));
             $pwd = trim((string) ($c['card_password'] ?? ''));
             if ($pwd === '' && $no !== '') {
                 [$no, $pwd] = [$pwd, $no]; // 密码空与卡号互换（对齐原系统）
+            }
+            $md5 = $no !== '' ? md5($no) : '';
+            // 去重：本单已入库 / 本批已取
+            if ($md5 !== '' && (in_array($md5, $existingMd5, true) || isset($dupeMd5[$md5]))) {
+                continue;
+            }
+            if ($md5 !== '') {
+                $dupeMd5[$md5] = true;
             }
             $rows[] = [
                 'goods_id'       => (int) $order->getAttr('goods_id'),
@@ -329,7 +375,7 @@ class DockingV2Service
                 'card_show_type' => 1,
                 'create_time'    => time(),
                 'update_time'    => time(),
-                'card_no_md5'       => $no !== '' ? md5($no) : '',
+                'card_no_md5'       => $md5,
                 'card_password_md5' => $pwd !== '' ? md5($pwd) : '',
             ];
         }
@@ -345,9 +391,17 @@ class DockingV2Service
             'stock_id'    => 0, // 渠道卡无本地库存行
             'order_id'    => (int) $order->getAttr('id'),
             'stock_log_type' => OrderDolog::LOG_DEC,
-            'mark'        => '渠道回卡 ' . count($rows) . ' 张',
+            'mark'        => '渠道回卡 ' . count($rows) . ' 张' . ($exists > 0 ? '（补卡，原 ' . $exists . ' 张）' : ''),
             'create_time' => time(),
         ]);
+    }
+
+    /**
+     * 订单日志（委托 OrderService）
+     */
+    protected static function log(Order $order, string $mark): void
+    {
+        OrderService::log($order, $mark);
     }
 
     /**

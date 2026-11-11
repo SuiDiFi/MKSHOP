@@ -37,6 +37,7 @@ class SysTimerController extends Base
             ['name' => 'order_auto_cancel',  'title' => '订单超时自动取消'],
             ['name' => 'order_auto_receive', 'title' => '订单自动收货'],
             ['name' => 'docking_sync_stock', 'title' => '上游库存价格同步'],
+            ['name' => 'docking_order_bu',   'title' => '渠道补单/订单同步（mks:dockbu）'],
             ['name' => 'money_day_report',   'title' => '资金日报汇总'],
             ['name' => 'card_stock_warning', 'title' => '卡密库存预警'],
         ];
