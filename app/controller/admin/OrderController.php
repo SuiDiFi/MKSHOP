@@ -109,6 +109,19 @@ class OrderController extends Base
     }
 
     /**
+     * 订单同步（对齐 order/sync_order）：拉渠道侧状态推进本地订单
+     */
+    public function sync_order(int $id)
+    {
+        $order = Order::findOrEmpty($id);
+        if ($order->isEmpty()) {
+            return $this->fail('订单不存在');
+        }
+        $result = \app\common\service\DockingV2Service::syncOrder($order);
+        return $this->ok($result, $result['changed'] === [] ? '渠道无变更' : implode('；', $result['changed']));
+    }
+
+    /**
      * 状态枚举（对齐 order/status_type，取自 sys_dict）
      */
     public function status_type()

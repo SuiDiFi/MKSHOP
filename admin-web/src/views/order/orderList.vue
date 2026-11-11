@@ -36,6 +36,7 @@
         <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openDetail(row)">详情</el-button>
+            <el-button v-if="row.docking_info" link type="warning" @click="doSync(row)">同步</el-button>
             <el-button v-if="row.status === 1" link type="success" @click="doDual(row, 3)">处理成功</el-button>
             <el-button v-if="row.status === 0" link type="warning" @click="doDual(row, -1)">取消</el-button>
             <el-popconfirm v-if="row.status === 3" title="确认退款？余额原路退回，已发卡密将冻结" width="240"
@@ -99,7 +100,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
-  orderIndex, orderInfo, orderGoodsCards, orderDual, orderDelete, orderStatusType,
+  orderIndex, orderInfo, orderGoodsCards, orderDual, orderDelete, orderStatusType, orderSync,
 } from '@/api';
 
 const loading = ref(false);
@@ -156,6 +157,12 @@ async function openDetail(row) {
 async function doDual(row, status) {
   const res = await orderDual(row.id, { status });
   ElMessage.success(res.msg || '处理成功');
+  load();
+}
+
+async function doSync(row) {
+  const res = await orderSync(row.id);
+  ElMessage.success(res.msg || '同步完成');
   load();
 }
 

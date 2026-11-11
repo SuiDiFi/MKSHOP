@@ -223,7 +223,7 @@ class OrderService
     }
 
     /**
-     * 自动发货（本地卡密 FIFO：sale_first desc → id asc；固定/普通统一按卡行分配）
+     * 自动发货调度：stock.type=1 本地卡密 FIFO / type=2 渠道下单（对齐原系统 doJob 选择器）
      */
     public static function deliver(Order $order): void
     {
@@ -234,18 +234,36 @@ class OrderService
         $goodsType = (int) $order->getAttr('goods_type');
         $quantity  = (int) $order->getAttr('quantity');
 
-        if ($goodsType !== 1) {
-            // 虚拟直充类：M2 无渠道对接，等待人工
-            $order->save(['recharge_hints' => '订单正在处理中，请耐心等待']);
-            self::log($order, '虚拟商品进入人工处理队列');
+        if ($goodsType !== 1 && $goodsType !== 2) {
+            // 实物等其他类型：等待人工
+            self::log($order, '订单进入人工处理队列');
             return;
         }
 
-        $stock = self::cardStockOf(Goods::findOrEmpty((int) $order->getAttr('goods_id')));
+        $stock = self::stockOf($order);
         if ($stock === null) {
-            self::log($order, '商品未配置卡密库存，等待人工处理');
+            self::log($order, '商品未配置库存，等待人工处理');
+            $order->save(['recharge_hints' => '库存补货中，订单排队处理']);
             return;
         }
+
+        if ((int) $stock->getAttr('type') === GoodsStock::TYPE_DOCKING) {
+            // 渠道发货（失败抛出走人工，不回滚支付）
+            try {
+                DockingV2Service::deliver($order, $stock);
+            } catch (\Throwable $e) {
+                self::log($order, '渠道发货进入人工处理：' . $e->getMessage());
+            }
+            return;
+        }
+        self::deliverByCards($order, $stock, $quantity);
+    }
+
+    /**
+     * 本地卡密发货（FIFO：sale_first desc → id asc；固定/普通统一按卡行分配）
+     */
+    protected static function deliverByCards(Order $order, GoodsStock $stock, int $quantity): void
+    {
         $cateId = (int) $stock->getAttr('card_cate_id');
         $qty    = $quantity;
 
@@ -307,6 +325,23 @@ class OrderService
             throw $e;
         }
         self::log($order, '自动发货成功 ' . $qty . ' 张卡密');
+    }
+
+    /**
+     * 订单库存行（type=1 卡密 或 type=2 渠道；卡密类取关联卡库，渠道类取绑定渠道）
+     */
+    public static function stockOf(Order $order): ?GoodsStock
+    {
+        $goods = Goods::findOrEmpty((int) $order->getAttr('goods_id'));
+        if ($goods->isEmpty()) {
+            return null;
+        }
+        $stock = GoodsStock::where('goods_id', (int) $goods->getAttr('id'))
+            ->whereIn('type', [GoodsStock::TYPE_CARD, GoodsStock::TYPE_DOCKING])
+            ->where('status', 1)
+            ->order('id asc')
+            ->findOrEmpty();
+        return $stock->isEmpty() ? null : $stock;
     }
 
     /**

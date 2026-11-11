@@ -133,6 +133,19 @@ Route::group('admin', function () {
         Route::post('order/modify/:id', 'admin.OrderController/modify');
         Route::post('order/status_type', 'admin.OrderController/status_type');
         Route::post('order/pay_type', 'admin.OrderController/pay_type');
+        Route::post('order/sync_order/:id', 'admin.OrderController/sync_order');
+
+        // 对接渠道（权限点 docking/*；M3 上游 v2api）
+        Route::get('docking/index', 'admin.DockingController/index');
+        Route::post('docking/list', 'admin.DockingController/list');
+        Route::post('docking/create', 'admin.DockingController/create');
+        Route::post('docking/save/:id', 'admin.DockingController/save');
+        Route::post('docking/delete/:id', 'admin.DockingController/delete');
+        Route::post('docking/modify/:id', 'admin.DockingController/modify');
+        Route::post('docking/user_money', 'admin.DockingController/user_money');
+        Route::post('docking/goods_list', 'admin.DockingController/goods_list');
+        Route::post('docking/goods_dual', 'admin.DockingController/goods_dual');
+        Route::get('docking/log_index', 'admin.DockingController/log_index');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,

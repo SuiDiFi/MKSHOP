@@ -75,6 +75,10 @@ INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`
   (64, '字典管理', 90, 'MksDictList', 'dict', 'collection', '@/views/setting/dict', 1, '', '', 0),
   (64, '菜单管理', 89, 'MksMenuList', 'menulist', 'menu', '@/views/setting/userManagement/menuList', 1, '', '', 0);
 
+-- 4.3 M3 渠道管理可见菜单（挂商品(6)下）：对接渠道
+INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`) VALUES
+  (6, '对接渠道', 98, 'MksDockingList', 'docking', 'connection', '@/views/goods/dockingList', 1, '', '', 0);
+
 -- 5. 字典种子：核心枚举（来源 config/kss.php，码值精确）
 -- REPLACE 自愈：若历史导入因客户端字符集错误产生乱码行，重导即按唯一键覆盖修复
 REPLACE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES

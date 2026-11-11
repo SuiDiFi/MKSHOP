@@ -119,3 +119,16 @@ export const orderModify = (id, field, value) =>
   mksRequest(`/admin/order/modify/${id}`, 'POST', {}, { field, value });
 export const orderStatusType = () => mksRequest('/admin/order/status_type', 'POST');
 export const orderPayType = () => mksRequest('/admin/order/pay_type', 'POST');
+export const orderSync = (id) => mksRequest(`/admin/order/sync_order/${id}`, 'POST');
+
+// ─── 对接渠道（M3）───
+export const dockingIndex = (params) => mksRequest('/admin/docking/index', 'GET', params);
+export const dockingList = () => mksRequest('/admin/docking/list', 'POST');
+export const dockingCreate = (form) => mksRequest('/admin/docking/create', 'POST', {}, { form });
+export const dockingSave = (id, form) => mksRequest(`/admin/docking/save/${id}`, 'POST', {}, { form });
+export const dockingDelete = (id) => mksRequest(`/admin/docking/delete/${id}`, 'POST');
+export const dockingUserMoney = (dockingId) => mksRequest('/admin/docking/user_money', 'POST', {}, { docking_id: dockingId });
+export const dockingGoodsList = (dockingId, page = 1, keyword = '') =>
+  mksRequest('/admin/docking/goods_list', 'POST', {}, { docking_id: dockingId, page, keyword });
+export const dockingGoodsDual = (form) => mksRequest('/admin/docking/goods_dual', 'POST', {}, form);
+export const dockingLogIndex = (params) => mksRequest('/admin/docking/log_index', 'GET', params);
