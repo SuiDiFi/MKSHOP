@@ -5,8 +5,8 @@
 use think\facade\Env;
 
 return [
-    // 默认缓存驱动
-    'default' => Env::get('cache.driver', 'redis'),
+    // 默认缓存驱动（未安装/无站点密钥时回退 file，保证控制台可启动）
+    'default' => Env::get('mks.app_key') !== null ? Env::get('cache.driver', 'redis') : 'file',
 
     // 缓存连接方式配置
     'stores'  => [

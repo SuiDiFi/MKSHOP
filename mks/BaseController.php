@@ -6,13 +6,10 @@ declare (strict_types = 1);
 
 namespace mks;
 
-use app\BaseController;
+use app\BaseController as AppBaseController;
 use mks\traits\ResponseTrait;
 
-abstract class BaseController extends BaseController
+abstract class BaseController extends AppBaseController
 {
     use ResponseTrait;
-
-    /** @var \app\Request */
-    protected $request;
 }

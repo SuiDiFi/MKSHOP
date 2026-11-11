@@ -35,7 +35,16 @@
     },
     "config": {
         "preferred-install": "dist",
-        "optimize-autoloader": true
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "topthink/think-installer": true
+        },
+        "policy": {
+            "advisories": {
+                "block": false,
+                "ignore-id": ["PKSA-wpgp-v5cy-4kds", "PKSA-qzw1-yq5b-y8j5"]
+            }
+        }
     },
     "extra": {
         "think": {

@@ -29,11 +29,14 @@ class AdminAuth
         }
 
         // 当前接口三元组：path（去掉 admin 组前缀）+ method
-        $pathInfo = '/' . ltrim((string) $request->pathinfo(), '/');
-        $appKey   = (string) $request->app(); // admin
-        $prefix   = '/' . $appKey . '/';
-        $path     = str_starts_with($pathInfo, $prefix) ? substr($pathInfo, strlen($prefix)) : ltrim($pathInfo, '/');
-        $method   = strtoupper((string) $request->method());
+        $pathInfo = ltrim((string) $request->pathinfo(), '/');
+        $segments = explode('/', $pathInfo, 2);
+        $group    = $segments[0] ?? '';
+        $path     = $segments[1] ?? $segments[0];
+        if ($group !== 'admin') {
+            return json_fail('非法访问', 403, 403);
+        }
+        $method = strtoupper((string) $request->method());
         if ($method === 'OPTIONS') {
             return $next($request);
         }
@@ -131,8 +134,9 @@ class AdminAuth
 
     /**
      * 展开管理员角色模型
+     * @return \think\model\Collection|array
      */
-    public static function rolesOf(array $adminInfo): array
+    public static function rolesOf(array $adminInfo)
     {
         $roleIds = array_filter(explode(',', (string) ($adminInfo['roles'] ?? '')));
         if ($roleIds === []) {
@@ -141,8 +145,7 @@ class AdminAuth
         return AdminRole::where('status', 1)
             ->where('delete_time', 0)
             ->whereIn('id', $roleIds)
-            ->select()
-            ->all();
+            ->select();
     }
 
     /**

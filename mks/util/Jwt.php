@@ -6,8 +6,7 @@ declare (strict_types = 1);
 
 namespace mks\util;
 
-use Firebase\JWT\ExpiredException;
-use Firebase\JWT\JWT;
+use Firebase\JWT\JWT as JwtCodec; // 注意：不能 use ...JWT 后再声明 class Jwt（PHP 类名不区分大小写，别名冲突）
 use Firebase\JWT\Key;
 use think\facade\Cache;
 use think\facade\Config;
@@ -24,15 +23,15 @@ class Jwt
         $ttl    = $ttl > 0 ? $ttl : (int) Config::get('mks.auth.admin_ttl', 604800);
         $jti    = bin2hex(random_bytes(16));
         $claims = [
-            'iss'  => Config::get('mks.auth.issuer', 'mkshop'),
-            'sub'  => (string) $uid,
-            'jti'  => $jti,
-            'scene'=> $scene,
-            'iat'  => $now,
-            'nbf'  => $now,
-            'exp'  => $now + $ttl,
+            'iss'   => Config::get('mks.auth.issuer', 'mkshop'),
+            'sub'   => (string) $uid,
+            'jti'   => $jti,
+            'scene' => $scene,
+            'iat'   => $now,
+            'nbf'   => $now,
+            'exp'   => $now + $ttl,
         ];
-        $token = JWT::encode($claims, self::secret(), 'HS256');
+        $token = JwtCodec::encode($claims, self::secret(), 'HS256');
 
         // Redis 会话登记（登出/踢线 = 删除该键）
         Cache::store('redis')->set(self::cacheKey($scene, $jti), $uid, $ttl);
@@ -47,8 +46,8 @@ class Jwt
     public static function verify(string $token, string $scene): array
     {
         $leeway = (int) Config::get('mks.auth.sign_leeway', 300);
-        JWT::$leeway = $leeway;
-        $claims = (array) JWT::decode($token, new Key(self::secret(), 'HS256'));
+        JwtCodec::$leeway = $leeway;
+        $claims = (array) JwtCodec::decode($token, new Key(self::secret(), 'HS256'));
 
         if (($claims['scene'] ?? '') !== $scene) {
             throw_fail('令牌场景不匹配', 401);

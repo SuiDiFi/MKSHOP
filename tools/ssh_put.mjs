@@ -17,12 +17,17 @@ const localArg = process.argv[2] || '';
 const remoteDir = process.argv[3] || '/opt/mkshop';
 if (!localArg) { console.error('用法: node tools/ssh_put.mjs "<本地文件...>" "<远程目录>"'); process.exit(1); }
 
-// 展开本地路径（支持目录递归）
+// 展开本地路径（支持目录递归）；文件保留完整相对路径，目录按 目录名/内部相对路径
 function expand(p, base = '') {
   const st = statSync(p);
-  if (st.isFile()) return [{ local: p, remote: base ? posix.join(base, p.split(/[\\/]/).pop()) : p.split(/[\\/]/).pop() }];
+  const norm = (s) => s.replace(/\\/g, '/');
+  if (st.isFile()) {
+    const rel = base !== '' ? posix.join(norm(base), norm(p).split('/').pop()) : norm(p);
+    return [{ local: p, remote: rel }];
+  }
   const out = [];
-  for (const name of readdirSync(p)) out.push(...expand(join(p, name), posix.join(base, p.split(/[\\/]/).pop())));
+  const dirName = norm(p).split('/').pop();
+  for (const name of readdirSync(p)) out.push(...expand(join(p, name), base !== '' ? posix.join(base, dirName) : dirName));
   return out;
 }
 

@@ -95,7 +95,7 @@ class Install extends Command
 
             // 已初始化库（表已存在）跳过 schema/seed，只执行幂等增量 extra
             $exists = $pdo->query("SHOW TABLES LIKE 'mks_config'")->fetch();
-            if ($exists && $input->getOption('action') !== 'force') {
+            if ($exists && $input->getArgument('action') !== 'force') {
                 $output->writeln('  检测到已初始化的数据库 — 跳过 schema/seed 导入');
             } else {
                 foreach (['mks_schema.sql', 'mks_seed.sql'] as $file) {
@@ -163,9 +163,9 @@ CHARSET = utf8mb4
 PREFIX = mks_
 
 [REDIS]
-REDIS_HOSTNAME = {$input->getOption('redis-host')}
+HOSTNAME = {$input->getOption('redis-host')}
 PORT = {$input->getOption('redis-port')}
-REDIS_PASSWORD = {$input->getOption('redis-pass')}
+PASSWORD = {$input->getOption('redis-pass')}
 SELECT = {$input->getOption('redis-select')}
 
 [MKS]

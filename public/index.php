@@ -18,5 +18,8 @@ if (!is_file(__DIR__ . '/install.lock') && !strpos($_SERVER['SCRIPT_NAME'] ?? ''
 require __DIR__ . '/../vendor/autoload.php';
 
 // 执行 HTTP 应用并响应
-$app = new think\App();
-$app->http->run();
+$http     = (new think\App())->http;
+$response = $http->run();
+
+$response->send();
+$http->end($response);

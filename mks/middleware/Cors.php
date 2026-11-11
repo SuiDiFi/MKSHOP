@@ -11,19 +11,12 @@ use think\Response;
 
 class Cors
 {
-    protected array $cookieDomain;
-
     protected array $header = [
         'Access-Control-Allow-Credentials' => 'true',
         'Access-Control-Max-Age'           => 1800,
         'Access-Control-Allow-Methods'     => 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers'     => 'Authorization, Content-Type, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, X-Requested-With, Sign, Timestamp, UserId',
     ];
-
-    public function __construct()
-    {
-        $this->cookieDomain = config('cookie.domain', '');
-    }
 
     /**
      * 允许跨域请求

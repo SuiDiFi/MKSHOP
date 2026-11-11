@@ -6,7 +6,7 @@ declare (strict_types = 1);
 
 namespace mks\middleware;
 
-use app\common\model\AdminLog;
+use app\common\model\AdminLog as AdminLogModel; // 别名导入：避免与本类名 AdminLog 冲突（PHP 类名不区分大小写）
 use think\Request;
 use think\Response;
 
@@ -31,7 +31,7 @@ class AdminLog
             $res    = is_object($response) && method_exists($response, 'getData') ? (array) $response->getData() : [];
             $isOk   = isset($res['code']) && (int) $res['code'] === 0;
 
-            AdminLog::create([
+            AdminLogModel::create([
                 'uid'         => $adminId,
                 'title'       => $path . ($isOk ? '' : ' [失败]'),
                 'ip'          => (string) $request->ip(),
