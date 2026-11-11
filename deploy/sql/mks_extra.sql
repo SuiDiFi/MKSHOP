@@ -42,7 +42,26 @@ CREATE TABLE IF NOT EXISTS `mks_role_api_permission` (
   KEY `idx_api` (`api_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色-接口权限关联';
 
--- 3. 字典种子：核心枚举（来源 config/kss.php，码值精确）
+-- 3. 队列失败任务表（红线 5：失败落库可重放；对应 config/queue.php failed）
+CREATE TABLE IF NOT EXISTS `mks_failed_jobs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `connection` text NOT NULL COMMENT '队列连接',
+  `queue` text NOT NULL COMMENT '队列名',
+  `payload` longtext NOT NULL COMMENT '任务负载',
+  `exception` longtext NOT NULL COMMENT '异常信息',
+  `failed_at` int NOT NULL DEFAULT 0 COMMENT '失败时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_queue` (`queue`(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='队列失败任务';
+
+-- 4. 会话管理白名单（登录态必需、不做 RBAC 权限点检查的接口）
+INSERT IGNORE INTO `mks_api_permission` (`path`,`methods`,`title`,`group`) VALUES
+  ('login/logout',  'POST', '登出',          'admin'),
+  ('login/getInfo', 'GET',  '我的信息',      'admin'),
+  ('login/getMenus','GET',  '后台菜单树',    'admin'),
+  ('dict/options',  'GET',  '字典选项（公共下拉）', 'admin');
+
+-- 5. 字典种子：核心枚举（来源 config/kss.php，码值精确）
 INSERT IGNORE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES
   -- 商品类型 goods_type
   ('goods_type','1','卡密商品',1),('goods_type','2','虚拟商品',2),('goods_type','3','实物商品',3),

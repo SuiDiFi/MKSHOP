@@ -11,6 +11,7 @@
         "topthink/think-queue": "^3.0",
         "topthink/think-swoole": "^4.0",
         "topthink/think-view": "^1.0",
+        "firebase/php-jwt": "^6.10",
         "phpoffice/phpspreadsheet": "^1.29",
         "ext-json": "*",
         "ext-redis": "*",
