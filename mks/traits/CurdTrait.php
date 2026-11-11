@@ -86,24 +86,34 @@ trait CurdTrait
     }
 
     /**
-     * 分页列表
+     * 分页列表（子类需扩展时：覆写 index() 并调用 $this->crudIndex()，
+     * 注意 parent::index() 走基类继承链不会回到本 Trait）
      */
     public function index()
+    {
+        $result = $this->crudIndex();
+        return $result instanceof \think\Response\Json ? $result : $this->ok($result);
+    }
+
+    /**
+     * 分页列表内部实现（返回 Response 或数组）
+     */
+    protected function crudIndex()
     {
         $page  = max(1, (int) $this->request->param('page', 1));
         $limit = min(200, max(1, (int) $this->request->param('limit', 15)));
         $query = $this->crudQuery($this->crudModel());
         $total = (clone $query)->count();
-        $list  = $query->page($page, $limit)->select();
+        $list  = $query->page($page, $limit)->select()->toArray();
         return $this->ok(['list' => $list, 'count' => $total]);
     }
 
     /**
-     * 全量列表（下拉选择用，强制 limit 500）
+     * 全量列表（下拉选择用，强制 limit 500；toArray 保证 JSON 序列化为纯数组）
      */
     public function list()
     {
-        $list = $this->crudQuery($this->crudModel())->limit(500)->select();
+        $list = $this->crudQuery($this->crudModel())->limit(500)->select()->toArray();
         return $this->ok($list);
     }
 
@@ -120,17 +130,29 @@ trait CurdTrait
     }
 
     /**
-     * 新建（表单数据放 form 参数或直接平铺）
+     * 新建（子类需预处理时：覆写 create() 并调用 $this->crudCreate()）
      */
     public function create()
     {
-        $data = $this->crudFormData();
+        $result = $this->crudCreate();
+        if ($result instanceof \think\Response\Json) {
+            return $result;
+        }
+        return $this->ok($result, '创建成功');
+    }
+
+    /**
+     * 新建内部实现（$data 传入预处理的完整数据；缺省时重新收集请求表单）
+     */
+    protected function crudCreate(?array $data = null)
+    {
+        $data = $data ?? $this->crudFormData();
         if ($data === []) {
             return $this->fail('没有需要保存的数据');
         }
         $model = $this->crudModel();
-        $row   = $model->allowField($this->crudFields ?: true)->save($data);
-        return $this->ok($row, '创建成功');
+        $model->allowField($this->crudFields ?: true)->save($data);
+        return $model;
     }
 
     /**

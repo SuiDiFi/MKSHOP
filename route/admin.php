@@ -75,6 +75,52 @@ Route::group('admin', function () {
         Route::post('sys_timer/create', 'admin.SysTimerController/create');
         Route::post('sys_timer/delete/:id', 'admin.SysTimerController/delete');
         Route::post('sys_timer/modify/:id', 'admin.SysTimerController/modify');
+
+        // ── M1 商品模块 ──────────────────────────────────────
+        // 商品（权限点 goods/*）
+        Route::get('goods/index', 'admin.GoodsController/index');
+        Route::get('goods/read/:id', 'admin.GoodsController/read');
+        Route::post('goods/list', 'admin.GoodsController/list');
+        Route::post('goods/create', 'admin.GoodsController/create');
+        Route::post('goods/save/:id', 'admin.GoodsController/save');
+        Route::post('goods/delete/:id', 'admin.GoodsController/delete');
+        Route::post('goods/destroy/:id', 'admin.GoodsController/destroy');
+        Route::post('goods/restore/:id', 'admin.GoodsController/restore');
+        Route::post('goods/modify/:id', 'admin.GoodsController/modify');
+        Route::post('goods/sort', 'admin.GoodsController/sort');
+        Route::post('goods/status_type', 'admin.GoodsController/status_type');
+        Route::post('goods/goods_type', 'admin.GoodsController/goods_type');
+        Route::post('goods/provide_type', 'admin.GoodsController/provide_type');
+        Route::post('goods/default_tags_list', 'admin.GoodsController/default_tags_list');
+
+        // 商品分类（权限点 category/*）
+        Route::get('category/index', 'admin.GoodsCategoryController/index');
+        Route::post('category/list', 'admin.GoodsCategoryController/list');
+        Route::post('category/create', 'admin.GoodsCategoryController/create');
+        Route::post('category/save/:id', 'admin.GoodsCategoryController/save');
+        Route::post('category/delete/:id', 'admin.GoodsCategoryController/delete');
+        Route::post('category/modify/:id', 'admin.GoodsCategoryController/modify');
+
+        // 卡密库存（权限点 card/* card_cate/* card_history/*）
+        Route::get('card/index', 'admin.CardController/index');
+        Route::post('card/create', 'admin.CardController/create');
+        Route::post('card/save', 'admin.CardController/save');
+        Route::post('card/delete/:id', 'admin.CardController/delete');
+        Route::post('card/delete_all', 'admin.CardController/delete_all');
+        Route::get('card_cate/index', 'admin.CardCateController/index');
+        Route::post('card_cate/list', 'admin.CardCateController/list');
+        Route::post('card_cate/create', 'admin.CardCateController/create');
+        Route::post('card_cate/save/:id', 'admin.CardCateController/save');
+        Route::post('card_cate/delete/:id', 'admin.CardCateController/delete');
+        Route::get('card_history/index', 'admin.CardHistoryController/index');
+
+        // 品牌标签（权限点 goods_tags/*）
+        Route::get('goods_tags/index', 'admin.GoodsTagsController/index');
+        Route::post('goods_tags/list', 'admin.GoodsTagsController/list');
+        Route::post('goods_tags/create', 'admin.GoodsTagsController/create');
+        Route::post('goods_tags/save/:id', 'admin.GoodsTagsController/save');
+        Route::post('goods_tags/delete/:id', 'admin.GoodsTagsController/delete');
+        Route::post('goods_tags/modify/:id', 'admin.GoodsTagsController/modify');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,

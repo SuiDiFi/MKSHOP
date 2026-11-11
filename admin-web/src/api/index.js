@@ -62,3 +62,49 @@ export const timerSave = (id, form) => mksRequest(`/admin/sys_timer/save/${id}`,
 export const timerDelete = (id) => mksRequest(`/admin/sys_timer/delete/${id}`, 'POST');
 export const timerModify = (id, field, value) =>
   mksRequest(`/admin/sys_timer/modify/${id}`, 'POST', {}, { field, value });
+
+// ─── 商品管理（M1）───
+export const goodsIndex = (params) => mksRequest('/admin/goods/index', 'GET', params);
+export const goodsRead = (id) => mksRequest(`/admin/goods/read/${id}`);
+export const goodsCreate = (form) => mksRequest('/admin/goods/create', 'POST', {}, { form });
+export const goodsSave = (id, form) => mksRequest(`/admin/goods/save/${id}`, 'POST', {}, { form });
+export const goodsDelete = (id) => mksRequest(`/admin/goods/delete/${id}`, 'POST');
+export const goodsDestroy = (id) => mksRequest(`/admin/goods/destroy/${id}`, 'POST');
+export const goodsRestore = (id) => mksRequest(`/admin/goods/restore/${id}`, 'POST');
+export const goodsModify = (id, field, value) =>
+  mksRequest(`/admin/goods/modify/${id}`, 'POST', {}, { field, value });
+export const goodsStatusType = () => mksRequest('/admin/goods/status_type', 'POST');
+export const goodsGoodsType = () => mksRequest('/admin/goods/goods_type', 'POST');
+export const goodsProvideType = () => mksRequest('/admin/goods/provide_type', 'POST');
+export const goodsDefaultTags = () => mksRequest('/admin/goods/default_tags_list', 'POST');
+
+// ─── 商品分类（M1）───
+export const categoryIndex = (params) => mksRequest('/admin/category/index', 'GET', params);
+export const categoryList = () => mksRequest('/admin/category/list', 'POST');
+export const categoryCreate = (form) => mksRequest('/admin/category/create', 'POST', {}, { form });
+export const categorySave = (id, form) => mksRequest(`/admin/category/save/${id}`, 'POST', {}, { form });
+export const categoryDelete = (id) => mksRequest(`/admin/category/delete/${id}`, 'POST');
+export const categoryModify = (id, field, value) =>
+  mksRequest(`/admin/category/modify/${id}`, 'POST', {}, { field, value });
+
+// ─── 卡密库存（M1）───
+export const cardIndex = (params) => mksRequest('/admin/card/index', 'GET', params);
+export const cardCreate = (form) => mksRequest('/admin/card/create', 'POST', {}, { form });
+export const cardImport = (form) => mksRequest('/admin/card/save', 'POST', {}, { form });
+export const cardDelete = (id) => mksRequest(`/admin/card/delete/${id}`, 'POST');
+export const cardDeleteAll = (form) => mksRequest('/admin/card/delete_all', 'POST', {}, form);
+export const cardCateIndex = (params) => mksRequest('/admin/card_cate/index', 'GET', params);
+export const cardCateList = () => mksRequest('/admin/card_cate/list', 'POST');
+export const cardCateCreate = (form) => mksRequest('/admin/card_cate/create', 'POST', {}, { form });
+export const cardCateSave = (id, form) => mksRequest(`/admin/card_cate/save/${id}`, 'POST', {}, { form });
+export const cardCateDelete = (id) => mksRequest(`/admin/card_cate/delete/${id}`, 'POST');
+export const cardHistoryIndex = (params) => mksRequest('/admin/card_history/index', 'GET', params);
+
+// ─── 品牌标签（M1）───
+export const tagsIndex = (params) => mksRequest('/admin/goods_tags/index', 'GET', params);
+export const tagsList = () => mksRequest('/admin/goods_tags/list', 'POST');
+export const tagsCreate = (form) => mksRequest('/admin/goods_tags/create', 'POST', {}, { form });
+export const tagsSave = (id, form) => mksRequest(`/admin/goods_tags/save/${id}`, 'POST', {}, { form });
+export const tagsDelete = (id) => mksRequest(`/admin/goods_tags/delete/${id}`, 'POST');
+export const tagsModify = (id, field, value) =>
+  mksRequest(`/admin/goods_tags/modify/${id}`, 'POST', {}, { field, value });
