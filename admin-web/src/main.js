@@ -34,6 +34,8 @@ router.beforeEach(async (to) => {
     try {
       await store.fetchInfo();
     } catch (e) {
+      // token 失效/后端异常：清 token 再去登录，防止「有 token 访问登录页 → 跳 / → fetchInfo 401」重定向环
+      store.logout();
       return { name: 'Login' };
     }
     // 动态路由已注册，重新解析当前地址（否则匹配到注册前的 NotFound 记录）

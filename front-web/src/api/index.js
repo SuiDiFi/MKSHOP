@@ -11,6 +11,7 @@ export const memberBindParent = (data) => mksRequest('/front/member/bind_parent'
 export const goodsCates = () => mksRequest('/front/goods/cates', 'GET');
 export const goodsIndex = (params) => mksRequest('/front/goods/index', 'GET', params);
 export const goodsRead = (id) => mksRequest(`/front/goods/read/${id}`, 'GET');
+export const diyPcHome = () => mksRequest('/front/diy/pc_home', 'GET');
 
 // ─── 订单 ───
 export const orderBuy = (data) => mksRequest('/front/order/buy', 'POST', {}, data);

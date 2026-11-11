@@ -90,7 +90,19 @@ LIMIT 1;
 -- 4.5 M4 佣金接口权限点（auth_type=2 接口校验）
 INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`auth_type`,`api_url`,`methods`,`delete_time`) VALUES
   (0, '佣金列表',   100, 'commission_index',  2, 'commission/index',  'GET',  0),
-  (0, '佣金结算',   100, 'commission_settle', 2, 'commission/settle', 'POST', 0);
+  (0, '佣金结算',   100, 'commission_settle', 2, 'commission/settle', 'POST', 0),
+  (0, 'DIY页面列表', 100, 'diy_index',      2, 'diy/index',      'GET',  0),
+  (0, 'DIY页面详情', 100, 'diy_read',       2, 'diy/read',       'GET',  0),
+  (0, 'DIY页面保存', 100, 'diy_save',       2, 'diy/save',       'POST', 0),
+  (0, 'DIY组件库',   100, 'diy_components', 2, 'diy/components', 'GET',  0);
+
+-- 4.6 M5 DIY 可见菜单（与订单菜单同级；幂等防重）
+INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
+SELECT r.parentId, 'DIY装修', 95, 'MksDiyList', 'diy', 'brush', '@/views/diy/diyList', 1, '', '', 0
+FROM `mks_admin_router` r
+WHERE r.`path` = 'order' AND r.`auth_type` = 1
+  AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksDiyList' LIMIT 1) x)
+LIMIT 1;
 
 -- 5. 字典种子：核心枚举（来源 config/kss.php，码值精确）
 -- REPLACE 自愈：若历史导入因客户端字符集错误产生乱码行，重导即按唯一键覆盖修复

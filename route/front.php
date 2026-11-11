@@ -15,6 +15,7 @@ Route::group('front', function () {
         Route::get('goods/index', 'front.GoodsController/index');        // 在售商品列表
         Route::get('goods/read/:id', 'front.GoodsController/read');      // 商品详情
         Route::get('goods/cates', 'front.GoodsController/cates');        // 分类导航
+        Route::get('diy/pc_home', 'front.DiyController/pcHome');         // DIY 首页配置
     });
 
     // ── 登录组 ──

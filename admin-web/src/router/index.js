@@ -9,6 +9,13 @@ export const staticRoutes = [
     component: () => import('@/views/login.vue'),
     meta: { title: '登录' },
   },
+  {
+    // DIY 编辑器（全屏工作台，无菜单入口，由 diyList 跳转）
+    path: '/diy/editor/:id',
+    name: 'DiyEditor',
+    component: () => import('@/views/diy/diyEditor.vue'),
+    meta: { title: 'DIY 编辑器' },
+  },
 ];
 
 export const router = createRouter({

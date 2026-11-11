@@ -42,6 +42,14 @@ class GoodsController extends BaseController
         if ($categoryId > 0) {
             $query = $query->whereRaw("FIND_IN_SET({$categoryId}, category_ids)");
         }
+        // 指定商品ID集合（DIY 商品楼层）
+        $ids = (string) $this->request->param('ids', '');
+        if ($ids !== '') {
+            $idArr = array_filter(array_map('intval', explode(',', $ids)), fn ($v) => $v > 0);
+            if ($idArr !== []) {
+                $query = $query->whereIn('id', $idArr);
+            }
+        }
         $total = (clone $query)->count();
         $list  = $query->order('sort desc, id desc')->page($page, $limit)
             ->field('id,goods_no,goods_name,goods_short_name,goods_type,face_value,real_price,goods_img,goods_tags,ishot,stock_num,sales_num,virtual_num,recharge_time_type,recharge_time_value,start_count,end_count,num_count')

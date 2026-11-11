@@ -136,3 +136,9 @@ export const dockingLogIndex = (params) => mksRequest('/admin/docking/log_index'
 // ─── 分销佣金（M4）───
 export const commissionIndex = (params) => mksRequest('/admin/commission/index', 'GET', params);
 export const commissionSettle = (id) => mksRequest(`/admin/commission/settle/${id}`, 'POST');
+
+// ─── DIY 装修（M5）───
+export const diyIndex = () => mksRequest('/admin/diy/index', 'GET');
+export const diyRead = (id) => mksRequest(`/admin/diy/read/${id}`, 'GET');
+export const diySave = (id, data) => mksRequest(`/admin/diy/save/${id}`, 'POST', {}, data);
+export const diyComponents = () => mksRequest('/admin/diy/components', 'GET');

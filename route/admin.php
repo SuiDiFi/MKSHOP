@@ -151,6 +151,13 @@ Route::group('admin', function () {
         // 佣金记录（权限点 commission/*）
         Route::get('commission/index', 'admin.CommissionController/index');
         Route::post('commission/settle/:id', 'admin.CommissionController/settle');
+
+        // ── M5 装修模块 ──────────────────────────────────────
+        // DIY 页面（权限点 diy/*）
+        Route::get('diy/index', 'admin.DiyController/index');
+        Route::get('diy/read/:id', 'admin.DiyController/read');
+        Route::post('diy/save/:id', 'admin.DiyController/save');
+        Route::get('diy/components', 'admin.DiyController/components');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,
