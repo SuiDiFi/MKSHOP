@@ -48,4 +48,12 @@ return [
         'cost_scale' => 5,
         'show_scale' => 2,
     ],
+
+    // 分销佣金（M4：两级比例模式，比例取上级等级 member_level.one_rate/two_rate）
+    'commission' => [
+        // 分销总开关（goods.is_rebate 仍需逐商品开启）
+        'enabled'   => true,
+        // 佣金冻结期（分钟）：0=订单成功即时入账；>0 写入 order_commission 待 mks:commission 到期结算
+        'sure_time' => 0,
+    ],
 ];

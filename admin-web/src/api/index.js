@@ -132,3 +132,7 @@ export const dockingGoodsList = (dockingId, page = 1, keyword = '') =>
   mksRequest('/admin/docking/goods_list', 'POST', {}, { docking_id: dockingId, page, keyword });
 export const dockingGoodsDual = (form) => mksRequest('/admin/docking/goods_dual', 'POST', {}, form);
 export const dockingLogIndex = (params) => mksRequest('/admin/docking/log_index', 'GET', params);
+
+// ─── 分销佣金（M4）───
+export const commissionIndex = (params) => mksRequest('/admin/commission/index', 'GET', params);
+export const commissionSettle = (id) => mksRequest(`/admin/commission/settle/${id}`, 'POST');

@@ -6,7 +6,8 @@
 return [
     // 指令定义
     'commands' => [
-        'mks:install' => \app\common\commands\Install::class,
-        'mks:dockbu'  => \app\common\commands\DockBu::class,
+        'mks:install'    => \app\common\commands\Install::class,
+        'mks:dockbu'     => \app\common\commands\DockBu::class,
+        'mks:commission' => \app\common\commands\Commission::class,
     ],
 ];

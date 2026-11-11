@@ -290,13 +290,14 @@ class OrderService
                 'uid'         => (int) $order->getAttr('uid'),
                 'update_time' => time(),
             ]);
-            // 扣库存（重算口径，防漂移）
+            // 扣库存（重算口径，防漂移；goods.stock_num 为冗余汇总，重算防 unsigned 下溢）
             $cateNum  = Card::where('card_cate_id', $cateId)->where('status', 1)->count();
             CardCate::where('id', $cateId)->update(['card_num' => $cateNum, 'update_time' => time()]);
             $stockNum = max(0, (int) $stock->getAttr('stock_num') - $qty);
             GoodsStock::where('id', (int) $stock->getAttr('id'))->update(['stock_num' => $stockNum]);
             $goodsId = (int) $order->getAttr('goods_id');
-            Db::name('goods')->where('id', $goodsId)->dec('stock_num', $qty)->inc('sales_num', $qty)->update();
+            $totalStock = (int) Db::name('goods_stock')->where('goods_id', $goodsId)->where('status', 1)->sum('stock_num');
+            Db::name('goods')->where('id', $goodsId)->inc('sales_num', $qty)->update(['stock_num' => $totalStock]);
 
             // 订单完成
             $cost = bcmul((string) $stock->getAttr('cost_value'), (string) $qty, 5);
@@ -325,6 +326,12 @@ class OrderService
             throw $e;
         }
         self::log($order, '自动发货成功 ' . $qty . ' 张卡密');
+        // 分销佣金结算（幂等）
+        try {
+            CommissionService::settleIfSuccess((int) $order->getAttr('id'));
+        } catch (\Throwable $e) {
+            self::log($order, '佣金结算异常：' . $e->getMessage());
+        }
     }
 
     /**
@@ -366,6 +373,12 @@ class OrderService
                 ->whereIn('status', [Order::ST_WAIT_DEAL, Order::ST_DEALING])
                 ->update(['status' => Order::ST_SUCCESS, 'finish_time' => time(), 'reader' => (string) $adminId, 'update_time' => time()]);
             self::log($order, '管理员手动处理成功');
+            // 分销佣金结算（幂等）
+            try {
+                CommissionService::settleIfSuccess((int) $order->getAttr('id'));
+            } catch (\Throwable $e) {
+                self::log($order, '佣金结算异常：' . $e->getMessage());
+            }
             return;
         }
         if ($status === Order::ST_DEALING) {
@@ -460,6 +473,13 @@ class OrderService
             throw $e;
         }
         self::log($order, '退款 ' . $money . ' 元' . ($cardNum > 0 ? '，冻结卡密 ' . $cardNum . ' 张' : ''));
+        // 分销佣金按退款比例回冲
+        try {
+            $backRate = bcdiv($money, (string) $order->getAttr('total_price'), 4);
+            CommissionService::rollbackForRefund((int) $order->getAttr('id'), $backRate);
+        } catch (\Throwable $e) {
+            self::log($order, '佣金回冲异常：' . $e->getMessage());
+        }
     }
 
     /**

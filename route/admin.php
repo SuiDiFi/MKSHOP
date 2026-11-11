@@ -146,6 +146,11 @@ Route::group('admin', function () {
         Route::post('docking/goods_list', 'admin.DockingController/goods_list');
         Route::post('docking/goods_dual', 'admin.DockingController/goods_dual');
         Route::get('docking/log_index', 'admin.DockingController/log_index');
+
+        // ── M4 分销模块 ──────────────────────────────────────
+        // 佣金记录（权限点 commission/*）
+        Route::get('commission/index', 'admin.CommissionController/index');
+        Route::post('commission/settle/:id', 'admin.CommissionController/settle');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,
