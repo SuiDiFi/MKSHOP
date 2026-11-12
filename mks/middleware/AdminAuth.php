@@ -56,6 +56,13 @@ class AdminAuth
             ->where('delete_time', 0)
             ->where('api_url', $path)
             ->findOrEmpty();
+        if ($permission->isEmpty() && preg_match('#^(.+)/\d+$#', $path, $m)) {
+            // 兼容 RESTful 路径参数：member/read/10001 按登记项 member/read 校验
+            $permission = AdminRouter::where('auth_type', 2)
+                ->where('delete_time', 0)
+                ->where('api_url', $m[1])
+                ->findOrEmpty();
+        }
         if ($permission->isEmpty()) {
             return json_fail('接口未授权访问（未登记）', 403, 403);
         }

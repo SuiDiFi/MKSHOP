@@ -31,6 +31,15 @@ Route::group('front', function () {
         Route::get('commission/index', 'front.CommissionController/index'); // 概览
         Route::get('commission/teams', 'front.CommissionController/teams'); // 我的团队
         Route::get('commission/logs', 'front.CommissionController/logs');   // 佣金明细
+        // 提现（M4）
+        Route::get('member_collect/index', 'front.MemberCollectController/index');   // 我的提现记录
+        Route::get('member_collect/config', 'front.MemberCollectController/config');  // 提现配置
+        Route::post('member_collect/config', 'front.MemberCollectController/config'); // 提现配置（原协议 POST）
+        Route::post('member_collect/save', 'front.MemberCollectController/save');     // 申请提现
+        Route::get('member_collect_way/index', 'front.MemberCollectController/ways'); // 我的提现方式
+        Route::post('member_collect_way/list', 'front.MemberCollectController/ways'); // 提现方式选择
+        Route::post('member_collect_way/save', 'front.MemberCollectController/way_save');
+        Route::post('member_collect_way/delete', 'front.MemberCollectController/way_delete');
     })->middleware([
         \mks\middleware\MemberToken::class,
         \mks\middleware\VipSiteToken::class, // 分站上下文（M6：Host → vipSite）

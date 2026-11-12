@@ -25,3 +25,6 @@ docker/.env
 
 # 日志
 *.log
+
+# 部署临时脚本（联调/一次性执行，不入库）
+deploy/tmp_*.php

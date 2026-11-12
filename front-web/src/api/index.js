@@ -23,3 +23,11 @@ export const orderQuery = (params) => mksRequest('/front/order/query', 'GET', pa
 export const commissionIndex = () => mksRequest('/front/commission/index', 'GET');
 export const commissionTeams = (params) => mksRequest('/front/commission/teams', 'GET', params);
 export const commissionLogs = (params) => mksRequest('/front/commission/logs', 'GET', params);
+
+// ─── 提现（M4）───
+export const collectConfig = () => mksRequest('/front/member_collect/config', 'POST');
+export const collectIndex = (params) => mksRequest('/front/member_collect/index', 'GET', params);
+export const collectSave = (data) => mksRequest('/front/member_collect/save', 'POST', {}, data);
+export const collectWays = () => mksRequest('/front/member_collect_way/index', 'GET');
+export const collectWaySave = (data) => mksRequest('/front/member_collect_way/save', 'POST', {}, data);
+export const collectWayDelete = (id) => mksRequest('/front/member_collect_way/delete', 'POST', {}, { id });

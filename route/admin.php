@@ -150,7 +150,30 @@ Route::group('admin', function () {
         Route::post('docking/sync_stock', 'admin.DockingController/sync_stock'); // 渠道库存/成本补货同步
         Route::get('docking/log_index', 'admin.DockingController/log_index');
 
-        // ── M4 分销模块 ──────────────────────────────────────
+        // ── M4 会员分销模块 ──────────────────────────────────
+        // 会员管理（权限点 member/*）
+        Route::get('member/index', 'admin.MemberController/index');
+        Route::get('member/read/:id', 'admin.MemberController/read');
+        Route::post('member/create', 'admin.MemberController/create');
+        Route::post('member/save/:id', 'admin.MemberController/save');
+        Route::post('member/delete/:id', 'admin.MemberController/delete');
+        Route::post('member/restore/:id', 'admin.MemberController/restore');
+        Route::post('member/unbind/:id', 'admin.MemberController/unbind');
+        Route::post('member/reset_password/:id', 'admin.MemberController/reset_password');
+        Route::post('member/status_type', 'admin.MemberController/status_type');
+
+        // 会员等级（权限点 member_level/*）
+        Route::get('member_level/index', 'admin.MemberLevelController/index');
+        Route::post('member_level/list', 'admin.MemberLevelController/list');
+        Route::post('member_level/create', 'admin.MemberLevelController/create');
+        Route::post('member_level/save/:id', 'admin.MemberLevelController/save');
+        Route::post('member_level/delete/:id', 'admin.MemberLevelController/delete');
+        Route::post('member_level/modify/:id', 'admin.MemberLevelController/modify');
+
+        // 提现审核（权限点 member_collect/*）
+        Route::get('member_collect/index', 'admin.MemberCollectController/index');
+        Route::post('member_collect/dual/:id', 'admin.MemberCollectController/dual');
+
         // 佣金记录（权限点 commission/*）
         Route::get('commission/index', 'admin.CommissionController/index');
         Route::post('commission/settle/:id', 'admin.CommissionController/settle');

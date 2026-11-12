@@ -133,6 +133,29 @@ export const dockingGoodsList = (dockingId, page = 1, keyword = '') =>
 export const dockingGoodsDual = (form) => mksRequest('/admin/docking/goods_dual', 'POST', {}, form);
 export const dockingLogIndex = (params) => mksRequest('/admin/docking/log_index', 'GET', params);
 
+// ─── 会员管理（M4）───
+export const memberIndex = (params) => mksRequest('/admin/member/index', 'GET', params);
+export const memberRead = (id) => mksRequest(`/admin/member/read/${id}`);
+export const memberCreate = (form) => mksRequest('/admin/member/create', 'POST', {}, { form });
+export const memberSave = (id, form) => mksRequest(`/admin/member/save/${id}`, 'POST', {}, { form });
+export const memberDelete = (id) => mksRequest(`/admin/member/delete/${id}`, 'POST');
+export const memberRestore = (id) => mksRequest(`/admin/member/restore/${id}`, 'POST');
+export const memberUnbind = (id) => mksRequest(`/admin/member/unbind/${id}`, 'POST');
+export const memberResetPassword = (id, password) =>
+  mksRequest(`/admin/member/reset_password/${id}`, 'POST', {}, { password });
+export const memberStatusType = () => mksRequest('/admin/member/status_type', 'POST');
+
+// ─── 会员等级（M4）───
+export const memberLevelIndex = (params) => mksRequest('/admin/member_level/index', 'GET', params);
+export const memberLevelList = () => mksRequest('/admin/member_level/list', 'POST');
+export const memberLevelCreate = (form) => mksRequest('/admin/member_level/create', 'POST', {}, { form });
+export const memberLevelSave = (id, form) => mksRequest(`/admin/member_level/save/${id}`, 'POST', {}, { form });
+export const memberLevelDelete = (id) => mksRequest(`/admin/member_level/delete/${id}`, 'POST');
+
+// ─── 提现审核（M4）───
+export const memberCollectIndex = (params) => mksRequest('/admin/member_collect/index', 'GET', params);
+export const memberCollectDual = (id, data) => mksRequest(`/admin/member_collect/dual/${id}`, 'POST', {}, data);
+
 // ─── 分销佣金（M4）───
 export const commissionIndex = (params) => mksRequest('/admin/commission/index', 'GET', params);
 export const commissionSettle = (id) => mksRequest(`/admin/commission/settle/${id}`, 'POST');

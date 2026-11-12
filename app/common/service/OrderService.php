@@ -15,6 +15,7 @@ use app\common\model\CardCate;
 use app\common\model\Goods;
 use app\common\model\GoodsStock;
 use app\common\model\Member;
+use app\common\model\MemberLevel;
 use app\common\model\MemberMoney;
 use app\common\model\Order;
 use app\common\model\OrderDolog;
@@ -79,6 +80,13 @@ class OrderService
 
         $quantity2 = $quantity;
         $price = (string) $goods->getAttr('real_price');
+        // 会员折扣价（M4）：member_level.pay_rate 语义 0=无折扣；0~100 为折后百分比（95 = 95 折）
+        if ($member !== null && (int) $member->getAttr('level_id') > 0) {
+            $payRate = (string) MemberLevel::where('id', (int) $member->getAttr('level_id'))->value('pay_rate');
+            if (bccomp($payRate, '0', 2) > 0 && bccomp($payRate, '100', 2) < 0) {
+                $price = bcdiv(bcmul($price, $payRate, 6), '100', 4);
+            }
+        }
         // 分站上下文（M6）：分站售价 = 基础价 × (1+rate/100)；订单归属分站
         $vipSite = $input['vip_site'] ?? null;
         $vipFields = ['vip_id' => 0, 'vip_uid' => 0, 'vip_goods_price' => '0', 'vip_set_content' => null];
