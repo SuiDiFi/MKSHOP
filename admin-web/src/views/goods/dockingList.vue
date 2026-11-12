@@ -4,6 +4,7 @@
       <template #header>
         <div class="toolbar" style="margin-bottom: 0">
           <el-button type="success" @click="openForm()">新增渠道</el-button>
+          <el-button type="warning" @click="doSyncStock(0)">全部渠道同步库存</el-button>
           <el-button @click="load">刷新</el-button>
         </div>
       </template>
@@ -24,6 +25,7 @@
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button link type="success" @click="doMoney(row)">查余额</el-button>
+            <el-button link type="warning" @click="doSyncStock(row.id)">同步库存</el-button>
             <el-button link type="primary" @click="openGoods(row)">渠道商品</el-button>
             <el-button link type="primary" @click="openForm(row)">编辑</el-button>
             <el-popconfirm title="确定删除该渠道？" @confirm="doDelete(row.id)">
@@ -98,6 +100,7 @@ import {
   dockingIndex, dockingCreate, dockingSave, dockingDelete,
   dockingUserMoney, dockingGoodsList, dockingGoodsDual, goodsIndex,
 } from '@/api';
+import { dockingSyncStock } from '@/api/m3';
 
 const loading = ref(false);
 const saving = ref(false);
@@ -166,6 +169,11 @@ async function doMoney(row) {
   const res = await dockingUserMoney(row.id);
   row.balance = res.data.money;
   ElMessage.success(`渠道余额：${res.data.money}`);
+}
+
+async function doSyncStock(dockingId) {
+  const res = await dockingSyncStock(dockingId);
+  ElMessage.success(res.msg || '同步完成');
 }
 
 async function openGoods(row) {

@@ -33,6 +33,7 @@ class DockBuService
             ->where('o.docking_info', '')
             ->where('g.provide_type', 6)
             ->where('g.docking_order_bu', 1)
+            ->where('o.order_bu_count', '>', 0) // 后台"停止补单"置 0
             ->whereRaw('o.now_bu_count < g.order_bu_count')
             ->whereRaw('(g.auto_order_time <= 0 OR o.order_bu_time <= 0 OR o.order_bu_time + g.auto_order_time <= ?)', [time()])
             ->order('o.id asc')

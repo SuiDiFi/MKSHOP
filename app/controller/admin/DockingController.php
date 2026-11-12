@@ -149,6 +149,25 @@ class DockingController extends Base
     }
 
     /**
+     * 渠道库存/成本补货同步（对齐 docking/sync_stock）
+     * POST {docking_id?: 渠道ID，留空=全部启用渠道}
+     */
+    public function sync_stock()
+    {
+        $dockingId = (int) $this->request->param('docking_id', 0);
+        if ($dockingId > 0) {
+            $docking = Docking::findOrEmpty($dockingId);
+            if ($docking->isEmpty()) {
+                return $this->fail('渠道不存在');
+            }
+            $stat = \app\common\service\DockSyncService::syncDocking($docking);
+        } else {
+            $stat = \app\common\service\DockSyncService::syncAll();
+        }
+        return $this->ok($stat, sprintf('同步完成：更新 %d 条，缺货下架 %d 条', $stat['updated'], $stat['missing']));
+    }
+
+    /**
      * 渠道日志（监控日志对接 dockinglog/*）
      */
     public function log_index()

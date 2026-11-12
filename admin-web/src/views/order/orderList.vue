@@ -33,10 +33,14 @@
         <el-table-column label="下单时间" width="160">
           <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openDetail(row)">详情</el-button>
             <el-button v-if="row.docking_info" link type="warning" @click="doSync(row)">同步</el-button>
+            <el-button v-if="Number(row.provide_type) === 6 && [1, 2].includes(row.status)" link type="warning"
+              @click="doBu(row)">补单</el-button>
+            <el-button v-if="Number(row.provide_type) === 6 && row.status === 1" link type="info"
+              @click="doNoBu(row)">停补</el-button>
             <el-button v-if="row.status === 1" link type="success" @click="doDual(row, 3)">处理成功</el-button>
             <el-button v-if="row.status === 0" link type="warning" @click="doDual(row, -1)">取消</el-button>
             <el-popconfirm v-if="row.status === 3" title="确认退款？余额原路退回，已发卡密将冻结" width="240"
@@ -102,6 +106,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   orderIndex, orderInfo, orderGoodsCards, orderDual, orderDelete, orderStatusType, orderSync,
 } from '@/api';
+import { orderBu, orderNoBu } from '@/api/m3';
 
 const loading = ref(false);
 const list = ref([]);
@@ -163,6 +168,18 @@ async function doDual(row, status) {
 async function doSync(row) {
   const res = await orderSync(row.id);
   ElMessage.success(res.msg || '同步完成');
+  load();
+}
+
+async function doBu(row) {
+  const res = await orderBu(row.id);
+  ElMessage.success(res.msg || '补单完成');
+  load();
+}
+
+async function doNoBu(row) {
+  const res = await orderNoBu(row.id);
+  ElMessage.success(res.msg || '已停止补单');
   load();
 }
 

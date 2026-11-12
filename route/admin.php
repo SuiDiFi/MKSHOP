@@ -134,6 +134,8 @@ Route::group('admin', function () {
         Route::post('order/status_type', 'admin.OrderController/status_type');
         Route::post('order/pay_type', 'admin.OrderController/pay_type');
         Route::post('order/sync_order/:id', 'admin.OrderController/sync_order');
+        Route::post('order/do_get_order', 'admin.OrderController/do_get_order'); // 后台补单
+        Route::post('order/no_bu_order', 'admin.OrderController/no_bu_order');   // 停止补单
 
         // 对接渠道（权限点 docking/*；M3 上游 v2api）
         Route::get('docking/index', 'admin.DockingController/index');
@@ -145,6 +147,7 @@ Route::group('admin', function () {
         Route::post('docking/user_money', 'admin.DockingController/user_money');
         Route::post('docking/goods_list', 'admin.DockingController/goods_list');
         Route::post('docking/goods_dual', 'admin.DockingController/goods_dual');
+        Route::post('docking/sync_stock', 'admin.DockingController/sync_stock'); // 渠道库存/成本补货同步
         Route::get('docking/log_index', 'admin.DockingController/log_index');
 
         // ── M4 分销模块 ──────────────────────────────────────
