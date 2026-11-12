@@ -19,6 +19,8 @@ class MemberCommission extends BaseModel
     public const T_VIP_SHARE_BACK   = 4;    // 分站抽成回冲（M6）
     public const T_WITHDRAW_APPLY   = 5;    // 佣金提现冻结（申请）
     public const T_WITHDRAW_REFUND  = 6;    // 佣金提现驳回退回
+    public const T_VIP_SHARE_FREEZE   = 7;  // 分站抽成冻结（入冻结佣金）
+    public const T_VIP_SHARE_UNFREEZE = 8;  // 分站抽成解冻（冻结转可用）
     public const T_ADMIN_ADD        = 1001; // 后台加佣金
     public const T_ADMIN_SUB        = 1002; // 后台扣佣金
 

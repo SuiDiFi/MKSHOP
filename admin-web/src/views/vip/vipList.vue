@@ -16,6 +16,12 @@
           <template #default="{ row }">{{ row.owner ? `${row.owner_nickname}（${row.owner}）` : `UID ${row.uid}` }}</template>
         </el-table-column>
         <el-table-column prop="domain" label="绑定域名" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="path_prefix" label="二级目录" width="100">
+          <template #default="{ row }">{{ row.path_prefix ? '/' + row.path_prefix : '—' }}</template>
+        </el-table-column>
+        <el-table-column label="主站商品" width="90">
+          <template #default="{ row }">{{ Number(row.allow_main_goods) === 1 ? '展示' : '隐藏' }}</template>
+        </el-table-column>
         <el-table-column label="加价率" width="90">
           <template #default="{ row }">{{ row.rate }}%</template>
         </el-table-column>
@@ -32,8 +38,9 @@
         <el-table-column label="到期" width="110">
           <template #default="{ row }">{{ Number(row.expire_time) > 0 ? fmt(row.expire_time) : '永久' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
+            <el-button link type="success" @click="openDetail(row)">运营</el-button>
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-popconfirm title="确认删除该分站？" width="200" @confirm="doDelete(row)">
               <template #reference><el-button link type="danger">删除</el-button></template>
@@ -57,11 +64,22 @@
         <el-form-item label="绑定域名">
           <el-input v-model="form.domain" placeholder="如 shop.example.com（留空=未绑定）" />
         </el-form-item>
+        <el-form-item label="二级目录">
+          <el-input v-model="form.path_prefix" placeholder="如 shop（/shop/ 访问）" />
+        </el-form-item>
+        <el-form-item label="主站商品">
+          <el-switch v-model="form.allow_main_goods" :active-value="1" :inactive-value="0" />
+        </el-form-item>
+        <el-form-item label="结算冻结">
+          <el-input-number v-model="form.settle_minutes" :min="0" :max="100000" style="width: 100%" />
+          <span class="tip">分钟；0=用全局 order_vip_sure_time</span>
+        </el-form-item>
         <el-form-item label="加价率%">
           <el-input-number v-model="form.rate" :min="0" :max="100" :precision="2" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="抽成率%">
+        <el-form-item label="平台抽成%">
           <el-input-number v-model="form.share_rate" :min="0" :max="100" :precision="2" style="width: 100%" />
+          <span class="tip">按分站毛利计算；0=毛利全归分站</span>
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="form.status">
@@ -76,6 +94,9 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 运营详情 -->
+    <vip-detail v-model="detailVisible" :site-id="detailSiteId" />
   </div>
 </template>
 
@@ -83,6 +104,7 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { vipIndex, vipCreate, vipSave, vipDelete } from '../../api';
+import VipDetail from './vipDetail.vue';
 
 const list = ref([]);
 const total = ref(0);
@@ -91,6 +113,8 @@ const query = ref({ page: 1, limit: 15, name: '' });
 const dialogVisible = ref(false);
 const saving = ref(false);
 const form = ref({});
+const detailVisible = ref(false);
+const detailSiteId = ref(0);
 
 const load = async () => {
   loading.value = true;
@@ -104,8 +128,12 @@ const load = async () => {
 };
 const doSearch = () => { query.value.page = 1; load(); };
 const openCreate = () => {
-  form.value = { uid: 10000, name: '', domain: '', rate: 0, share_rate: 0, status: 1, mark: '' };
+  form.value = { uid: 10000, name: '', domain: '', path_prefix: '', allow_main_goods: 1, settle_minutes: 0, rate: 0, share_rate: 0, status: 1, mark: '' };
   dialogVisible.value = true;
+};
+const openDetail = (row) => {
+  detailSiteId.value = row.id;
+  detailVisible.value = true;
 };
 const openEdit = (row) => {
   form.value = { ...row };
@@ -139,4 +167,5 @@ onMounted(load);
 <style scoped>
 .toolbar { display: flex; gap: 8px; align-items: center; }
 .pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+.tip { color: #909399; font-size: 12px; margin-left: 6px; }
 </style>

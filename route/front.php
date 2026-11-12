@@ -10,6 +10,7 @@ Route::group('front', function () {
 
     // ── 公开组 ──
     Route::group(function () {
+        Route::get('site/info', 'front.SiteController/info');            // 分站/主站信息与主题（M6）
         Route::post('member/login', 'front.MemberController/login');     // 会员登录
         Route::post('member/register', 'front.MemberController/register'); // 注册（M4：支持邀请码）
         Route::get('goods/index', 'front.GoodsController/index');        // 在售商品列表

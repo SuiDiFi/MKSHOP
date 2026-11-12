@@ -57,7 +57,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  Wallet, List, Coin, Share, Tickets, Bell, QuestionFilled, Service,
+  Wallet, List, Coin, Share, Tickets, Bell, QuestionFilled, Service, Shop,
 } from '@element-plus/icons-vue';
 import { memberInfo, orderIndex } from '@/api';
 import { useUserStore } from '@/store/user';
@@ -70,16 +70,22 @@ const loading = ref(true);
 const orderLoading = ref(false);
 
 const initial = computed(() => (user.value.nickname || user.value.username || 'M').slice(0, 1).toUpperCase());
-const quicks = [
-  { name: '我的订单', path: '/orders', icon: List, color: '#409eff' },
-  { name: '资金明细', path: '/money', icon: Wallet, color: '#67c23a' },
-  { name: '分销中心', path: '/commission', icon: Share, color: '#e6a23c' },
-  { name: '提现记录', path: '/commission?tab=withdraw', icon: Tickets, color: '#f56c6c' },
-  { name: '商城公告', path: '/notices', icon: Bell, color: '#909399' },
-  { name: '帮助中心', path: '/help', icon: QuestionFilled, color: '#409eff' },
-  { name: '在线客服', path: '/kefu', icon: Service, color: '#67c23a' },
-  { name: '账户余额', path: '/money', icon: Coin, color: '#e6a23c' },
-];
+const quicks = computed(() => {
+  const base = [
+    { name: '我的订单', path: '/orders', icon: List, color: '#409eff' },
+    { name: '资金明细', path: '/money', icon: Wallet, color: '#67c23a' },
+    { name: '分销中心', path: '/commission', icon: Share, color: '#e6a23c' },
+    { name: '提现记录', path: '/commission?tab=withdraw', icon: Tickets, color: '#f56c6c' },
+    { name: '商城公告', path: '/notices', icon: Bell, color: '#909399' },
+    { name: '帮助中心', path: '/help', icon: QuestionFilled, color: '#409eff' },
+    { name: '在线客服', path: '/kefu', icon: Service, color: '#67c23a' },
+    { name: '账户余额', path: '/money', icon: Coin, color: '#e6a23c' },
+  ];
+  if (Number(user.value.has_vip) === 1) {
+    base.unshift({ name: '分站管理', path: '/vip', icon: Shop, color: '#f56c6c' });
+  }
+  return base;
+});
 
 const go = (path) => router.push(path);
 const statusText = (s) => ({ '-1': '已取消', 0: '待支付', 1: '处理中', 2: '正在处理', 3: '已完成', 4: '已取消', 5: '已退款' }[s] || '未知');

@@ -194,9 +194,22 @@ Route::group('admin', function () {
         // ── M6 分站模块 ──────────────────────────────────────
         // 分站管理（权限点 vip/*）
         Route::get('vip/index', 'admin.VipSiteController/index');
+        Route::get('vip/read/:id', 'admin.VipSiteController/read');
         Route::post('vip/create', 'admin.VipSiteController/create');
         Route::post('vip/save/:id', 'admin.VipSiteController/save');
         Route::post('vip/delete/:id', 'admin.VipSiteController/delete');
+        // 分站定价/订单/结算/配置/域名（M6）
+        Route::get('vip/goods_price_index', 'admin.VipSiteController/goods_price_index');
+        Route::post('vip/goods_price_save', 'admin.VipSiteController/goods_price_save');
+        Route::post('vip/goods_price_clear', 'admin.VipSiteController/goods_price_clear');
+        Route::get('vip/order_index', 'admin.VipSiteController/order_index');
+        Route::get('vip/settlement_index', 'admin.VipSiteController/settlement_index');
+        Route::post('vip/settlement_settle', 'admin.VipSiteController/settlement_settle');
+        Route::get('vip/config_read', 'admin.VipSiteController/config_read');
+        Route::post('vip/config_save', 'admin.VipSiteController/config_save');
+        Route::get('vip/domain_index', 'admin.VipSiteController/domain_index');
+        Route::post('vip/domain_save', 'admin.VipSiteController/domain_save');
+        Route::post('vip/domain_delete', 'admin.VipSiteController/domain_delete');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,

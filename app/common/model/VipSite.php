@@ -18,7 +18,19 @@ class VipSite extends BaseModel
     protected $defaultSoftDelete = 0;
 
     /**
-     * 分站售价（基础价 × (1 + rate/100)）
+     * 启用且未到期
+     */
+    public function isValid(): bool
+    {
+        if ((int) $this->getAttr('status') !== 1) {
+            return false;
+        }
+        $expire = (int) $this->getAttr('expire_time');
+        return $expire === 0 || $expire > time();
+    }
+
+    /**
+     * 分站售价（基础价 × (1 + rate/100)；商品级覆盖走 VipPriceService）
      */
     public function priceFor(string $basePrice): string
     {
@@ -27,5 +39,17 @@ class VipSite extends BaseModel
             return $basePrice;
         }
         return bcadd($basePrice, bcmul($basePrice, bcdiv($rate, '100', 6), 4), 4);
+    }
+
+    /**
+     * 抽成/货款冻结分钟（0=立即结算）
+     */
+    public function settleMinutes(string $configName, int $default): int
+    {
+        $minutes = (int) $this->getAttr('settle_minutes');
+        if ($minutes > 0) {
+            return $minutes;
+        }
+        return max(0, (int) \mks\util\SysConfig::get($configName, $default));
     }
 }

@@ -54,6 +54,16 @@ class Timer extends Command
                     $r['dockings'], $r['scanned'], $r['updated'], $r['missing'], $r['failed']
                 );
             },
+            // 分站抽成冻结到期解冻（M6）
+            'order_vip_sure_time' => function () {
+                $r = \app\common\service\VipSiteService::settleDue(200);
+                return sprintf('scanned=%d,settled=%d,failed=%d', $r['scanned'], $r['settled'], $r['failed']);
+            },
+            // 供货货款冻结到期解冻（M6）
+            'order_supply_sure_time' => function () {
+                $r = \app\common\service\SupplyService::settleDue(200);
+                return sprintf('scanned=%d,settled=%d,failed=%d', $r['scanned'], $r['settled'], $r['failed']);
+            },
         ];
 
         $now = time();

@@ -45,3 +45,16 @@ export const collectSave = (data) => mksRequest('/front/member_collect/save', 'P
 export const collectWays = () => mksRequest('/front/member_collect_way/index', 'GET');
 export const collectWaySave = (data) => mksRequest('/front/member_collect_way/save', 'POST', {}, data);
 export const collectWayDelete = (id) => mksRequest('/front/member_collect_way/delete', 'POST', {}, { id });
+
+// ─── 分站（M6）───
+export const siteInfo = () => mksRequest('/front/site/info', 'GET');
+export const vipOverview = () => mksRequest('/vip/overview', 'GET');
+export const vipGoodsIndex = (params) => mksRequest('/vip/goods_index', 'GET', params);
+export const vipGoodsPriceSave = (data) => mksRequest('/vip/goods_price_save', 'POST', {}, data);
+export const vipGoodsPriceClear = (data) => mksRequest('/vip/goods_price_clear', 'POST', {}, data);
+export const vipOrderIndex = (params) => mksRequest('/vip/order_index', 'GET', params);
+export const vipSettlementIndex = (params) => mksRequest('/vip/settlement_index', 'GET', params);
+export const vipCommissionLogs = (params) => mksRequest('/vip/commission_logs', 'GET', params);
+export const vipConfigRead = () => mksRequest('/vip/config_read', 'GET');
+export const vipConfigSave = (data) => mksRequest('/vip/config_save', 'POST', {}, data);
+export const vipDomainIndex = () => mksRequest('/vip/domain_index', 'GET');

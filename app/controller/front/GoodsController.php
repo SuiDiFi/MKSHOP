@@ -36,7 +36,10 @@ class GoodsController extends BaseController
             ->where('delete_time', 0);
         $vipSite = $this->request->vipSite ?? null;
         if ($vipSite) {
-            $query = \app\common\service\VipSiteService::visibleScope($query, (int) $vipSite->getAttr('id'));
+            $query = \app\common\service\VipPriceService::applyVisibleScope($query, $vipSite);
+        } else {
+            // 主站只展示平台公共商品（跨站不可见）
+            $query = $query->where('vip_id', 0);
         }
         $keyword = (string) $this->request->param('keyword', '');
         if ($keyword !== '') {
@@ -56,14 +59,29 @@ class GoodsController extends BaseController
         }
         $total = (clone $query)->count();
         $list  = $query->order('sort desc, id desc')->page($page, $limit)
-            ->field('id,goods_no,goods_name,goods_short_name,goods_type,face_value,real_price,goods_img,goods_tags,ishot,stock_num,sales_num,virtual_num,recharge_time_type,recharge_time_value,start_count,end_count,num_count')
+            ->field('id,goods_no,goods_name,goods_short_name,goods_type,face_value,real_price,goods_img,goods_tags,ishot,stock_num,sales_num,virtual_num,recharge_time_type,recharge_time_value,start_count,end_count,num_count,vip_id')
             ->select()
             ->toArray();
         if ($vipSite) {
+            $ovRows = \app\common\model\VipGoodsPrice::where('vip_id', (int) $vipSite->getAttr('id'))
+                ->whereIn('goods_id', array_column($list, 'id'))
+                ->where('status', 1)
+                ->select()
+                ->toArray();
+            $overrides = array_column($ovRows, null, 'goods_id');
             foreach ($list as &$r) {
-                $r['base_price'] = (string) $r['real_price'];
-                $r['real_price'] = $vipSite->priceFor((string) $r['real_price']);
+                $ov  = $overrides[(int) $r['id']] ?? null;
+                $ovModel = null;
+                if ($ov !== null) {
+                    $ovModel = (new \app\common\model\VipGoodsPrice())->data($ov, true);
+                }
+                $p = \app\common\service\VipPriceService::price((string) $r['real_price'], $vipSite, $ovModel);
+                $r['base_price']   = $p['base'];
+                $r['real_price']   = $p['price'];
+                $r['vip_mode']     = $p['mode'];
+                $r['vip_add']      = $p['add'];
             }
+            unset($r);
         }
         return $this->ok(['list' => $list, 'count' => $total]);
     }
@@ -77,19 +95,20 @@ class GoodsController extends BaseController
         if ($goods->isEmpty()) {
             return $this->fail('商品不存在或已下架');
         }
-        // 分站可见性校验
+        // 分站可见性与三级定价
         $vipSite = $this->request->vipSite ?? null;
+        $data    = $goods->toArray();
+        if (!$vipSite && (int) $goods->getAttr('vip_id') !== 0) {
+            return $this->fail('商品不存在或已下架');
+        }
         if ($vipSite) {
-            $gVip = (int) $goods->getAttr('vip_id');
-            if ($gVip !== 0 && $gVip !== (int) $vipSite->getAttr('id')) {
+            $p = \app\common\service\VipPriceService::resolve($goods, $vipSite);
+            if (!$p['visible']) {
                 return $this->fail('商品不存在或已下架');
             }
-        }
-        $data = $goods->toArray();
-        // 分站售价
-        if ($vipSite) {
-            $data['base_price'] = (string) $data['real_price'];
-            $data['real_price'] = $vipSite->priceFor((string) $data['real_price']);
+            $data['base_price'] = $p['base'];
+            $data['real_price'] = $p['price'];
+            $data['vip_add']    = $p['add'];
         }
         // 实时库存（卡密商品以卡库余量为准）
         $stockNum = (int) $goods->getAttr('stock_num');

@@ -105,6 +105,13 @@ class Install extends Command
             }
             $n = SqlImport::importFile($pdo, $sqlDir . 'mks_extra.sql');
             $output->writeln("  导入 mks_extra.sql: {$n} 条语句（幂等） — <info>OK</info>");
+            $n = SqlImport::importFile($pdo, $sqlDir . 'mks_m6.sql');
+            $output->writeln("  导入 mks_m6.sql: {$n} 条语句（幂等） — <info>OK</info>");
+            // 主站域名兜底（后续可在后台补真实域名）
+            $hasMain = $pdo->query("SELECT id FROM `mks_sys_url` WHERE is_main = 1 LIMIT 1")->fetch();
+            if (!$hasMain) {
+                $pdo->exec("INSERT INTO `mks_sys_url` (vip_id,type,url,is_main,template,template_pc,create_time,update_time) VALUES (0,1,'',1,'default','default',UNIX_TIMESTAMP(),UNIX_TIMESTAMP())");
+            }
         } catch (\Throwable $e) {
             $output->error('建库失败: ' . $e->getMessage());
             return 1;

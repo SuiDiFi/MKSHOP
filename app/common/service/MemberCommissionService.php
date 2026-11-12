@@ -92,4 +92,184 @@ class MemberCommissionService
         }
         return ['before' => $before, 'after' => $after];
     }
+
+    /**
+     * 冻结佣金入账（freez_commission_money += money）
+     */
+    public static function freeze(
+        int $uid,
+        int $tradeType,
+        string $money,
+        int $orderId = 0,
+        string $mark = '',
+        string $idempotentKey = ''
+    ): array {
+        if ($uid <= 0 || bccomp($money, '0', 4) <= 0) {
+            return ['before' => '0.0000', 'after' => '0.0000'];
+        }
+        if ($idempotentKey !== '') {
+            $exists = MemberCommission::where('extend_id', $idempotentKey)->findOrEmpty();
+            if (!$exists->isEmpty()) {
+                $after = (string) Member::where('id', $uid)->value('freez_commission_money');
+                return ['before' => $after, 'after' => $after];
+            }
+        }
+        Db::startTrans();
+        try {
+            $member = Member::lock(true)->findOrEmpty($uid);
+            if ($member->isEmpty()) {
+                throw_fail('会员不存在', 1);
+            }
+            $before = (string) $member->getAttr('freez_commission_money');
+            $after  = bcadd($before, $money, 4);
+            $member->force()->save(['freez_commission_money' => $after]);
+            MemberCommission::create([
+                'uid'         => $uid,
+                'money'       => $money,
+                'trade_type'  => $tradeType,
+                'change_type' => MemberCommission::C_INCOME,
+                'before'      => $before,
+                'after'       => $after,
+                'create_time' => time(),
+                'extend_id'   => mb_substr($idempotentKey, 0, 250, 'UTF-8'),
+                'mark'        => mb_substr($mark, 0, 250, 'UTF-8'),
+                'order_id'    => $orderId,
+            ]);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            throw $e;
+        }
+        return ['before' => $before, 'after' => $after];
+    }
+
+    /**
+     * 从冻结佣金扣减（退款回冲；不足按可扣封顶）
+     */
+    public static function deductFrozen(
+        int $uid,
+        int $tradeType,
+        string $money,
+        int $orderId = 0,
+        string $mark = '',
+        string $idempotentKey = ''
+    ): array {
+        if ($uid <= 0 || bccomp($money, '0', 4) <= 0) {
+            return ['before' => '0.0000', 'after' => '0.0000'];
+        }
+        if ($idempotentKey !== '') {
+            $exists = MemberCommission::where('extend_id', $idempotentKey)->findOrEmpty();
+            if (!$exists->isEmpty()) {
+                $after = (string) Member::where('id', $uid)->value('freez_commission_money');
+                return ['before' => $after, 'after' => $after];
+            }
+        }
+        Db::startTrans();
+        try {
+            $member = Member::lock(true)->findOrEmpty($uid);
+            if ($member->isEmpty()) {
+                throw_fail('会员不存在', 1);
+            }
+            $before = (string) $member->getAttr('freez_commission_money');
+            $take   = bccomp($money, $before, 4) > 0 ? $before : $money;
+            if (bccomp($take, '0', 4) <= 0) {
+                Db::rollback();
+                return ['before' => $before, 'after' => $before];
+            }
+            $after = bcsub($before, $take, 4);
+            $member->force()->save(['freez_commission_money' => $after]);
+            MemberCommission::create([
+                'uid'         => $uid,
+                'money'       => $take,
+                'trade_type'  => $tradeType,
+                'change_type' => MemberCommission::C_PAY,
+                'before'      => $before,
+                'after'       => $after,
+                'create_time' => time(),
+                'extend_id'   => mb_substr($idempotentKey, 0, 250, 'UTF-8'),
+                'mark'        => mb_substr($mark, 0, 250, 'UTF-8'),
+                'order_id'    => $orderId,
+            ]);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            throw $e;
+        }
+        return ['before' => $before, 'after' => $after];
+    }
+
+    /**
+     * 冻结佣金解冻：冻结 → 可用（同一事务两条流水）
+     */
+    public static function unfreeze(
+        int $uid,
+        string $money,
+        int $incomeTradeType,
+        int $frozenTradeType,
+        int $orderId = 0,
+        string $mark = '',
+        string $idempotentKey = '',
+        string $incomeKey = ''
+    ): array {
+        if ($uid <= 0 || bccomp($money, '0', 4) <= 0) {
+            return ['before' => '0.0000', 'after' => '0.0000'];
+        }
+        if ($idempotentKey !== '') {
+            $exists = MemberCommission::where('extend_id', $idempotentKey)->findOrEmpty();
+            if (!$exists->isEmpty()) {
+                $after = (string) Member::where('id', $uid)->value('commission_money');
+                return ['before' => $after, 'after' => $after];
+            }
+        }
+        Db::startTrans();
+        try {
+            $member = Member::lock(true)->findOrEmpty($uid);
+            if ($member->isEmpty()) {
+                throw_fail('会员不存在', 1);
+            }
+            $frozenBefore = (string) $member->getAttr('freez_commission_money');
+            $availBefore  = (string) $member->getAttr('commission_money');
+            $take = bccomp($money, $frozenBefore, 4) > 0 ? $frozenBefore : $money;
+            if (bccomp($take, '0', 4) <= 0) {
+                Db::rollback();
+                return ['before' => $availBefore, 'after' => $availBefore];
+            }
+            $frozenAfter = bcsub($frozenBefore, $take, 4);
+            $availAfter  = bcadd($availBefore, $take, 4);
+            $member->force()->save([
+                'freez_commission_money' => $frozenAfter,
+                'commission_money'       => $availAfter,
+                'total_commission_money' => bcadd((string) $member->getAttr('total_commission_money'), $take, 4),
+            ]);
+            MemberCommission::create([
+                'uid'         => $uid,
+                'money'       => $take,
+                'trade_type'  => $frozenTradeType,
+                'change_type' => MemberCommission::C_PAY,
+                'before'      => $frozenBefore,
+                'after'       => $frozenAfter,
+                'create_time' => time(),
+                'extend_id'   => mb_substr($idempotentKey, 0, 250, 'UTF-8'),
+                'mark'        => mb_substr('[解冻] ' . $mark, 0, 250, 'UTF-8'),
+                'order_id'    => $orderId,
+            ]);
+            MemberCommission::create([
+                'uid'         => $uid,
+                'money'       => $take,
+                'trade_type'  => $incomeTradeType,
+                'change_type' => MemberCommission::C_INCOME,
+                'before'      => $availBefore,
+                'after'       => $availAfter,
+                'create_time' => time(),
+                'extend_id'   => mb_substr($incomeKey !== '' ? $incomeKey : $idempotentKey . ':IN', 0, 250, 'UTF-8'),
+                'mark'        => mb_substr($mark, 0, 250, 'UTF-8'),
+                'order_id'    => $orderId,
+            ]);
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            throw $e;
+        }
+        return ['before' => $availBefore, 'after' => $availAfter];
+    }
 }

@@ -13,8 +13,10 @@ class MemberSupply extends BaseModel
     protected $updateTime = false;
 
     /** trade_type */
-    public const T_ORDER_SUPPLY = 1;    // 订单货款入账
-    public const T_SUPPLY_BACK  = 2;    // 退款货款回冲
+    public const T_ORDER_SUPPLY        = 1; // 订单货款入账（可用）
+    public const T_SUPPLY_BACK         = 2; // 退款货款回冲
+    public const T_ORDER_SUPPLY_FREEZE = 3; // 订单货款冻结（入冻结货款）
+    public const T_SUPPLY_UNFREEZE     = 4; // 货款解冻（冻结转可用）
     public const T_ADMIN_ADD    = 1001;
     public const T_ADMIN_SUB    = 1002;
 

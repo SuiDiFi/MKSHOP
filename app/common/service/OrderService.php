@@ -79,31 +79,49 @@ class OrderService
         }
 
         $quantity2 = $quantity;
-        $price = (string) $goods->getAttr('real_price');
-        // 会员折扣价（M4）：member_level.pay_rate 语义 0=无折扣；0~100 为折后百分比（95 = 95 折）
-        if ($member !== null && (int) $member->getAttr('level_id') > 0) {
+        $basePrice = (string) $goods->getAttr('real_price');
+        $price = $basePrice;
+        // 分站上下文（M6）：三级定价（商品级覆盖 > 分站比例 > 基准价）；站点内不叠加会员折扣
+        $vipSite = $input['vip_site'] ?? null;
+        $vipFields = [
+            'vip_id'          => 0,
+            'vip_uid'         => 0,
+            'vip_goods_price' => '0.0000',
+            'vip_add_price'   => '0.0000',
+            'vip_set_content' => null,
+        ];
+        if ($vipSite instanceof \app\common\model\VipSite) {
+            $vp = VipPriceService::resolve($goods, $vipSite);
+            if (!$vp['visible']) {
+                throw_fail('商品已下架或不在当前分站销售', 1);
+            }
+            $basePrice = $vp['base'];
+            $price     = $vp['price'];
+            $vipFields = [
+                'vip_id'          => (int) $vipSite->getAttr('id'),
+                'vip_uid'         => (int) $vipSite->getAttr('uid'),
+                'vip_goods_price' => $price,
+                'vip_add_price'   => $vp['add'],
+                'vip_set_content' => json_encode([
+                    'mode'       => $vp['mode'],
+                    'value'      => $vp['value'],
+                    'base_price' => $basePrice,
+                    'rate'       => (string) $vipSite->getAttr('rate'),
+                ], JSON_UNESCAPED_UNICODE),
+            ];
+        } elseif ($member !== null && (int) $member->getAttr('level_id') > 0) {
+            // 会员折扣价（M4）：member_level.pay_rate 语义 0=无折扣；0~100 为折后百分比（95 = 95 折）
             $payRate = (string) MemberLevel::where('id', (int) $member->getAttr('level_id'))->value('pay_rate');
             if (bccomp($payRate, '0', 2) > 0 && bccomp($payRate, '100', 2) < 0) {
                 $price = bcdiv(bcmul($price, $payRate, 6), '100', 4);
             }
         }
-        // 分站上下文（M6）：分站售价 = 基础价 × (1+rate/100)；订单归属分站
-        $vipSite = $input['vip_site'] ?? null;
-        $vipFields = ['vip_id' => 0, 'vip_uid' => 0, 'vip_goods_price' => '0', 'vip_set_content' => null];
-        if ($vipSite instanceof \app\common\model\VipSite) {
-            $vipPrice = $vipSite->priceFor($price);
-            $vipFields = [
-                'vip_id'          => (int) $vipSite->getAttr('id'),
-                'vip_uid'         => (int) $vipSite->getAttr('uid'),
-                'vip_goods_price' => $vipPrice,
-                'vip_set_content' => json_encode([
-                    'rate' => (string) $vipSite->getAttr('rate'),
-                    'base_price' => $price,
-                ], JSON_UNESCAPED_UNICODE),
-            ];
-            $price = $vipPrice;
-        }
         $total = bcmul($price, (string) $quantity2, 4);
+        // 供货商快照（M6）
+        $supplierId   = (int) $goods->getAttr('uid');
+        $supplierName = $supplierId > 0
+            ? (string) Member::where('id', $supplierId)->value('nickname')
+            : '';
 
         $order = new Order();
         $order->save(array_merge([
@@ -112,6 +130,8 @@ class OrderService
             'uid'                 => $member ? (int) $member->getAttr('id') : 0,
             'nickname'            => $member ? (string) $member->getAttr('nickname') : '',
             'mobile'              => $member ? (string) $member->getAttr('mobile') : '',
+            'supplier_id'         => $supplierId,
+            'supplier_name'       => $supplierName,
             'user_where'          => (string) ($input['user_where'] ?? 'pc'),
             'goods_id'            => (int) $goods->getAttr('id'),
             'goods_name'          => (string) $goods->getAttr('goods_name'),

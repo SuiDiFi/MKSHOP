@@ -174,6 +174,18 @@ export const kefuClose = (data) => mksRequest('/admin/kefu/close', 'POST', {}, d
 
 // ─── 分站管理（M6）───
 export const vipIndex = (params) => mksRequest('/admin/vip/index', 'GET', params);
+export const vipRead = (id) => mksRequest(`/admin/vip/read/${id}`, 'GET');
 export const vipCreate = (form) => mksRequest('/admin/vip/create', 'POST', {}, { form });
 export const vipSave = (id, form) => mksRequest(`/admin/vip/save/${id}`, 'POST', {}, { form });
 export const vipDelete = (id) => mksRequest(`/admin/vip/delete/${id}`, 'POST');
+export const vipGoodsPriceIndex = (params) => mksRequest('/admin/vip/goods_price_index', 'GET', params);
+export const vipGoodsPriceSave = (data) => mksRequest('/admin/vip/goods_price_save', 'POST', {}, data);
+export const vipGoodsPriceClear = (data) => mksRequest('/admin/vip/goods_price_clear', 'POST', {}, data);
+export const vipOrderIndex = (params) => mksRequest('/admin/vip/order_index', 'GET', params);
+export const vipSettlementIndex = (params) => mksRequest('/admin/vip/settlement_index', 'GET', params);
+export const vipSettlementSettle = (data) => mksRequest('/admin/vip/settlement_settle', 'POST', {}, data);
+export const vipConfigRead = (params) => mksRequest('/admin/vip/config_read', 'GET', params);
+export const vipConfigSave = (data) => mksRequest('/admin/vip/config_save', 'POST', {}, data);
+export const vipDomainIndex = (params) => mksRequest('/admin/vip/domain_index', 'GET', params);
+export const vipDomainSave = (data) => mksRequest('/admin/vip/domain_save', 'POST', {}, data);
+export const vipDomainDelete = (data) => mksRequest('/admin/vip/domain_delete', 'POST', {}, data);

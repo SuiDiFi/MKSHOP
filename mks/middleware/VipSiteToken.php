@@ -13,7 +13,7 @@ class VipSiteToken
 {
     public function handle(Request $request, \Closure $next)
     {
-        $site = VipSiteService::resolveByHost((string) $request->host());
+        $site = VipSiteService::resolveByHost((string) $request->host(), (string) $request->pathinfo());
         $request->vipSite   = $site;
         $request->vipId     = $site ? (int) $site->getAttr('id') : 0;
         return $next($request);
