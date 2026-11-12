@@ -16,10 +16,13 @@ class DiyController extends BaseController
      */
     public function pcHome()
     {
-        $page = DiyPage::where('pid', DiyPage::PID_PC_HOME)
-            ->where('status', 1)
-            ->where('delete_time', 0)
-            ->findOrEmpty();
+        // preview=1 用于后台装修预览：返回草稿组件（不校验发布状态）
+        $preview = (int) $this->request->param('preview', 0) === 1;
+        $query = DiyPage::where('pid', DiyPage::PID_PC_HOME)->where('delete_time', 0);
+        if (!$preview) {
+            $query = $query->where('status', 1);
+        }
+        $page = $query->findOrEmpty();
         if ($page->isEmpty()) {
             return $this->ok(['title' => '', 'components' => []]);
         }

@@ -96,12 +96,10 @@ INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`auth_ty
   (0, 'DIY页面保存', 100, 'diy_save',       2, 'diy/save',       'POST', 0),
   (0, 'DIY组件库',   100, 'diy_components', 2, 'diy/components', 'GET',  0);
 
--- 4.6 M5 DIY 可见菜单（与订单菜单同级；幂等防重）
+-- 4.6 M5 DIY 可见菜单（顶级菜单；幂等防重）
 INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
-SELECT r.parentId, 'DIY装修', 95, 'MksDiyList', 'diy', 'brush', '@/views/diy/diyList', 1, '', '', 0
-FROM `mks_admin_router` r
-WHERE r.`path` = 'order' AND r.`auth_type` = 1
-  AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksDiyList' LIMIT 1) x)
+SELECT 0, 'DIY装修', 95, 'MksDiyList', 'diy', 'brush', '@/views/diy/diyList', 1, '', '', 0
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksDiyList' LIMIT 1) x)
 LIMIT 1;
 
 -- 4.7 M6 分站表（重写新增；原系统分站表在 vip 付费插件未随包，语义按订单/会员表 vip_id 引用反推）

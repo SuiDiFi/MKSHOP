@@ -4,10 +4,11 @@
     <div class="wrap page-body">
       <!-- DIY 模式：按装修配置渲染 -->
       <template v-if="diyMode">
-        <el-input v-model="keyword" placeholder="搜索商品" clearable style="max-width: 320px; margin: 14px auto 0; display: flex"
+        <el-input v-if="!hasDiySearch" v-model="keyword" placeholder="搜索商品" clearable style="max-width: 320px; margin: 14px auto 0; display: flex"
           @keyup.enter="searchGo">
           <template #append><el-button :icon="Search" @click="searchGo" /></template>
         </el-input>
+        <div v-if="previewMode" class="preview-tip">预览模式：展示未发布的草稿配置</div>
         <div v-for="(c, i) in diyComps" :key="i" style="margin-top: 14px">
           <component :is="renderer(c.name)" :value="c.value" />
         </div>
@@ -75,13 +76,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineAsyncComponent } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { Search, Bell } from '@element-plus/icons-vue';
 import { goodsCates, goodsIndex, homeIndex } from '@/api';
 import { diyPcHome } from '@/api';
 
 const router = useRouter();
+const route = useRoute();
+const previewMode = ref(route.query.diy_preview === '1');
 const cates = ref([]);
 const activeCate = ref(0);
 const keyword = ref('');
@@ -95,11 +98,15 @@ const notices = ref([]);
 // DIY
 const diyMode = ref(false);
 const diyComps = ref([]);
+const hasDiySearch = computed(() => diyComps.value.some((c) => c.name === 'Search'));
 // 异步组件注册（必须 defineAsyncComponent 包装，裸 () => import() 在 :is 会被当函数组件执行）
 const rendererMap = {
+  Search: defineAsyncComponent(() => import('@/components/diy/DSearch.vue')),
   Banner: defineAsyncComponent(() => import('@/components/diy/DBanner.vue')),
   Notice: defineAsyncComponent(() => import('@/components/diy/DNotice.vue')),
   Menus: defineAsyncComponent(() => import('@/components/diy/DMenus.vue')),
+  CategoryNav: defineAsyncComponent(() => import('@/components/diy/DCategoryNav.vue')),
+  ImageAd: defineAsyncComponent(() => import('@/components/diy/DImageAd.vue')),
   GoodsList: defineAsyncComponent(() => import('@/components/diy/DGoodsList.vue')),
   RichText: defineAsyncComponent(() => import('@/components/diy/DRichText.vue')),
 };
@@ -130,7 +137,7 @@ const searchGo = () => {
 onMounted(async () => {
   // 优先加载 DIY 配置（已发布且有组件 → DIY 模式）
   try {
-    const diy = await diyPcHome();
+    const diy = await diyPcHome(previewMode.value ? { preview: 1 } : {});
     const comps = diy.data?.components || [];
     if (comps.length > 0) {
       diyComps.value = comps;

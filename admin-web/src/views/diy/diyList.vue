@@ -16,9 +16,10 @@
         <el-table-column label="组件数" width="90">
           <template #default="{ row }">{{ componentCount(row.value) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="170">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/diy/editor/${row.id}`)">装修</el-button>
+            <el-button link @click="preview">预览</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -38,6 +39,9 @@ const componentCount = (valueJson) => {
     const arr = JSON.parse(valueJson || '[]');
     return Array.isArray(arr) ? arr.length : 0;
   } catch (e) { return 0; }
+};
+const preview = () => {
+  window.open(`/front-web/#/?diy_preview=1&cb=${Date.now()}`, '_blank');
 };
 
 onMounted(async () => {

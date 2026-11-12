@@ -48,6 +48,7 @@ a { text-decoration: none; color: inherit; }
 .hero-link:hover { background: rgba(255,255,255,.3); }
 .notice-bar { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: #fff; border-radius: 8px; padding: 10px 14px; }
 .notice-marquee { flex: 1; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preview-tip { margin-top: 12px; background: #fdf6ec; color: #e6a23c; border: 1px dashed #f5dab1; border-radius: 8px; padding: 8px 14px; font-size: 13px; }
 @media (max-width: 768px) {
   .hero { flex-direction: column; }
   .hero-links { width: 100%; }

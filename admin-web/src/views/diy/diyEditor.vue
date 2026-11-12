@@ -3,11 +3,15 @@
     <!-- 顶部栏 -->
     <div class="editor-top">
       <span class="page-title">{{ page.title || 'DIY 装修' }}</span>
+      <el-select v-model="templateKey" placeholder="选择模板" size="small" style="width: 180px" @change="applyTemplate">
+        <el-option v-for="t in templates" :key="t.key" :label="t.name" :value="t.key" />
+      </el-select>
       <el-radio-group v-model="status" size="small">
         <el-radio-button :value="0">草稿</el-radio-button>
         <el-radio-button :value="1">发布</el-radio-button>
       </el-radio-group>
       <el-button type="primary" size="small" :loading="saving" @click="doSave">保存</el-button>
+      <el-button size="small" @click="doPreview">预览</el-button>
       <el-button size="small" @click="$router.back()">返回</el-button>
     </div>
 
@@ -35,7 +39,17 @@
           </div>
           <!-- 组件预览摘要 -->
           <div class="comp-preview">
-            <template v-if="c.name === 'Banner'">
+            <template v-if="c.name === 'Search'">
+              <span class="muted">搜索框：{{ c.value.placeholder || '搜索商品' }}</span>
+            </template>
+            <template v-else-if="c.name === 'ImageAd'">
+              <el-tag size="small">{{ c.value.img ? '已配置图片' : '未配置图片' }}</el-tag>
+              <span class="muted" style="margin-left:6px">高度 {{ c.value.height || 120 }}px</span>
+            </template>
+            <template v-else-if="c.name === 'CategoryNav'">
+              <span class="muted">{{ c.value.title || '商品分类' }} · 最多 {{ c.value.limit || 8 }} 个</span>
+            </template>
+            <template v-else-if="c.name === 'Banner'">
               <el-tag v-for="(b, i) in (c.value.list || [])" :key="i" size="small" style="margin-right:6px">{{ b.img ? '图' + (i + 1) : '空图' + (i + 1) }}</el-tag>
               <span v-if="!(c.value.list || []).length" class="muted">未配置</span>
             </template>
@@ -61,7 +75,28 @@
       <div class="panel" v-if="active">
         <div class="panel-title">配置 · {{ active.title }}</div>
 
-        <template v-if="active.name === 'Banner'">
+        <template v-if="active.name === 'Search'">
+          <el-form label-width="70px" size="small">
+            <el-form-item label="占位文案"><el-input v-model="active.value.placeholder" /></el-form-item>
+          </el-form>
+        </template>
+
+        <template v-else-if="active.name === 'ImageAd'">
+          <el-form label-width="70px" size="small">
+            <el-form-item label="图片"><el-input v-model="active.value.img" placeholder="图片 URL" /></el-form-item>
+            <el-form-item label="跳转"><el-input v-model="active.value.url" placeholder="#/goods/1 或外链" /></el-form-item>
+            <el-form-item label="高度"><el-input-number v-model="active.value.height" :min="60" :max="400" /></el-form-item>
+          </el-form>
+        </template>
+
+        <template v-else-if="active.name === 'CategoryNav'">
+          <el-form label-width="70px" size="small">
+            <el-form-item label="标题"><el-input v-model="active.value.title" /></el-form-item>
+            <el-form-item label="数量"><el-input-number v-model="active.value.limit" :min="1" :max="12" /></el-form-item>
+          </el-form>
+        </template>
+
+        <template v-else-if="active.name === 'Banner'">
           <div v-for="(b, i) in active.value.list" :key="i" class="cfg-item">
             <el-input v-model="b.img" placeholder="图片 URL" size="small" style="margin-bottom:6px" />
             <div style="display:flex; gap:6px">
@@ -120,8 +155,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import { diyRead, diySave, categoryList } from '../../api';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { diyRead, diySave, diyComponents, categoryList } from '../../api';
 
 const route = useRoute();
 const router = useRouter();
@@ -131,22 +166,30 @@ const comps = ref([]);
 const activeIdx = ref(-1);
 const saving = ref(false);
 const cates = ref([]);
+const templates = ref([]);
+const templateKey = ref('');
 
 // 组件默认配置
 const defaultValues = {
-  Banner: { list: [{ img: '', url: '' }] },
+  Search: { placeholder: '搜索商品' },
+  Banner: { height: 280, list: [{ img: '', url: '' }] },
   Notice: { text: '' },
   Menus: { list: [{ icon: '', title: '', url: '' }] },
+  CategoryNav: { title: '商品分类', limit: 8 },
+  ImageAd: { img: '', url: '', height: 120 },
   GoodsList: { title: '热卖推荐', source: 'cate', cate_id: 0, goods_ids: '', num: 4 },
   RichText: { html: '' },
 };
-const library = [
+const library = ref([
+  { name: 'Search', title: '搜索框', desc: '商品搜索入口' },
   { name: 'Banner', title: '轮播图', desc: '图片轮播，支持跳转链接' },
   { name: 'Notice', title: '公告条', desc: '公告文案' },
   { name: 'Menus', title: '金刚区', desc: '图标快捷导航' },
+  { name: 'CategoryNav', title: '分类导航', desc: '按分类快捷进入' },
+  { name: 'ImageAd', title: '单图广告', desc: '整行广告图' },
   { name: 'GoodsList', title: '商品楼层', desc: '按分类或指定商品展示' },
   { name: 'RichText', title: '富文本', desc: '自定义图文内容' },
-];
+]);
 
 const active = computed(() => (activeIdx.value >= 0 ? comps.value[activeIdx.value] : null));
 const sourceText = (v) => (v.source === 'ids' ? `指定ID ${v.goods_ids || '未填'}` : `分类 ${v.cate_id || '全部'} × ${v.num || 4}`);
@@ -173,9 +216,34 @@ const doSave = async () => {
     saving.value = false;
   }
 };
+const applyTemplate = async (key) => {
+  const t = templates.value.find((x) => x.key === key);
+  if (!t) return;
+  try {
+    await ElMessageBox.confirm(`应用模板「${t.name}」会覆盖当前组件序列，确定继续？`, '提示', { type: 'warning' });
+  } catch (e) {
+    templateKey.value = '';
+    return;
+  }
+  comps.value = (t.components || []).map((c) => ({
+    name: c.name,
+    title: c.title || c.name,
+    value: c.value || {},
+  }));
+  activeIdx.value = -1;
+  ElMessage.success('已应用模板，保存后生效');
+};
+const doPreview = () => {
+  window.open(`/front-web/#/?diy_preview=1&cb=${Date.now()}`, '_blank');
+};
 
 onMounted(async () => {
   categoryList().then((r) => { cates.value = r.data || []; }).catch(() => {});
+  diyComponents().then((r) => {
+    const d = r.data || {};
+    if (Array.isArray(d.components)) library.value = d.components;
+    templates.value = d.templates || [];
+  }).catch(() => {});
   const res = await diyRead(route.params.id);
   const d = res.data || {};
   page.value = d;

@@ -95,6 +95,7 @@ const pickCate = (id) => {
 onMounted(async () => {
   const cateId = Number(route.query.cate || 0);
   if (cateId) activeCate.value = cateId;
+  if (route.query.kw) keyword.value = String(route.query.kw);
   try {
     const res = await categoryIndex();
     cates.value = res.data?.list || [];

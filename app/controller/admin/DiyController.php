@@ -96,10 +96,13 @@ class DiyController extends BaseController
     }
 
     /**
-     * 组件库清单
+     * 组件库清单 + 内置模板
      */
     public function components()
     {
-        return $this->ok(DiyPage::COMPONENTS);
+        return $this->ok([
+            'components' => DiyPage::COMPONENTS,
+            'templates'  => DiyPage::TEMPLATES,
+        ]);
     }
 }
