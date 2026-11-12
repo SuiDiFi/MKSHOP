@@ -25,3 +25,8 @@ export const noticeIndex = (params) => mksRequest('/front/notice/index', 'GET', 
 export const noticeInfo = (id) => mksRequest(`/front/notice/info/${id}`, 'GET');
 export const helpList = (params) => mksRequest('/front/support/list', 'GET', params);
 export const helpInfo = (id) => mksRequest(`/front/support/detail/${id}`, 'GET');
+
+// 在线客服
+export const kefuStart = (source = 'h5') => mksRequest('/front/kefu/start', 'POST', {}, { source });
+export const kefuMessages = (params) => mksRequest('/front/kefu/messages', 'GET', params);
+export const kefuSend = (data) => mksRequest('/front/kefu/send', 'POST', {}, data);

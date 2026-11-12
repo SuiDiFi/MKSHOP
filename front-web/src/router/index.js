@@ -15,6 +15,7 @@ const routes = [
   { path: '/help/:id', name: 'HelpDetail', component: () => import('@/views/ArticleDetail.vue'), meta: { title: '帮助详情' } },
   { path: '/member', name: 'Member', component: () => import('@/views/Member.vue'), meta: { title: '会员中心', auth: true } },
   { path: '/money', name: 'Money', component: () => import('@/views/Money.vue'), meta: { title: '资金明细', auth: true } },
+  { path: '/kefu', name: 'Kefu', component: () => import('@/views/Kefu.vue'), meta: { title: '在线客服', auth: true } },
   { path: '/login', name: 'Login', component: () => import('@/views/Login.vue'), meta: { title: '登录' } },
   { path: '/register', name: 'Register', component: () => import('@/views/Register.vue'), meta: { title: '注册' } },
   { path: '/orders', name: 'Orders', component: () => import('@/views/Orders.vue'), meta: { title: '我的订单', auth: true } },

@@ -9,6 +9,7 @@
         <router-link to="/category">分类</router-link>
         <router-link to="/notices">公告</router-link>
         <router-link to="/help">帮助中心</router-link>
+        <router-link to="/kefu">在线客服</router-link>
         <router-link to="/orders">我的订单</router-link>
         <router-link to="/member">会员中心</router-link>
         <router-link to="/commission">分销中心</router-link>

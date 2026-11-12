@@ -18,7 +18,7 @@
           <div style="font-weight:600">没有找到答案？</div>
           <div class="muted" style="margin-top:4px">联系在线客服处理</div>
         </div>
-        <button class="btn ghost" style="height:36px" @click="$router.push('/member')">联系客服</button>
+        <button class="btn ghost" style="height:36px" @click="$router.push('/kefu')">联系客服</button>
       </div>
     </div>
   </div>

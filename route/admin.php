@@ -150,6 +150,12 @@ Route::group('admin', function () {
         Route::post('docking/sync_stock', 'admin.DockingController/sync_stock'); // 渠道库存/成本补货同步
         Route::get('docking/log_index', 'admin.DockingController/log_index');
 
+        // ── M5 客服工作台 ─────────────────────────────────────
+        Route::get('kefu/index', 'admin.KefuController/index');
+        Route::get('kefu/messages', 'admin.KefuController/messages');
+        Route::post('kefu/reply', 'admin.KefuController/reply');
+        Route::post('kefu/close', 'admin.KefuController/close');
+
         // ── M4 会员分销模块 ──────────────────────────────────
         // 会员管理（权限点 member/*）
         Route::get('member/index', 'admin.MemberController/index');

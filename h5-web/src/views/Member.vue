@@ -34,6 +34,9 @@
         <div class="menu-item" @click="$router.push('/help')">
           <span>❓ 帮助中心</span><span class="muted">›</span>
         </div>
+        <div class="menu-item" @click="$router.push('/kefu')">
+          <span>💬 在线客服</span><span class="muted">›</span>
+        </div>
       </div>
 
       <div class="menu">

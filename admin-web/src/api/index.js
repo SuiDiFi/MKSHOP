@@ -166,6 +166,12 @@ export const diyRead = (id) => mksRequest(`/admin/diy/read/${id}`, 'GET');
 export const diySave = (id, data) => mksRequest(`/admin/diy/save/${id}`, 'POST', {}, data);
 export const diyComponents = () => mksRequest('/admin/diy/components', 'GET');
 
+// ─── 客服工作台（M5）───
+export const kefuIndex = (params) => mksRequest('/admin/kefu/index', 'GET', params);
+export const kefuMessages = (params) => mksRequest('/admin/kefu/messages', 'GET', params);
+export const kefuReply = (data) => mksRequest('/admin/kefu/reply', 'POST', {}, data);
+export const kefuClose = (data) => mksRequest('/admin/kefu/close', 'POST', {}, data);
+
 // ─── 分站管理（M6）───
 export const vipIndex = (params) => mksRequest('/admin/vip/index', 'GET', params);
 export const vipCreate = (form) => mksRequest('/admin/vip/create', 'POST', {}, { form });

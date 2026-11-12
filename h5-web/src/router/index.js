@@ -14,6 +14,7 @@ const routes = [
   { path: '/notice/:id', name: 'NoticeDetail', component: () => import('@/views/ArticleDetail.vue'), meta: { title: '公告详情' } },
   { path: '/help', name: 'Help', component: () => import('@/views/Help.vue'), meta: { title: '帮助中心' } },
   { path: '/help/:id', name: 'HelpDetail', component: () => import('@/views/ArticleDetail.vue'), meta: { title: '帮助详情' } },
+  { path: '/kefu', name: 'Kefu', component: () => import('@/views/Kefu.vue'), meta: { title: '在线客服', auth: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 
