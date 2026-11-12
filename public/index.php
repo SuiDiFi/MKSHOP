@@ -9,9 +9,13 @@ if (version_compare(PHP_VERSION, '8.0.0', '<')) {
     die('MKSHOP requires PHP >= 8.0.0');
 }
 
-// 未安装时引导安装向导
-if (!is_file(__DIR__ . '/install.lock') && !strpos($_SERVER['SCRIPT_NAME'] ?? '', 'install')) {
-    header('Location: /index.php?s=/install/');
+// 未安装时引导安装向导（锁文件：项目根 install.lock 为权威，兼容 public/install.lock）
+$rootLock = dirname(__DIR__) . '/install.lock';
+$uri      = (string) ($_SERVER['REQUEST_URI'] ?? '');
+$isInstall = str_contains($uri, '/install') || str_contains($uri, 's=/install');
+$isHealth  = str_contains($uri, '/healthz');
+if (!is_file(__DIR__ . '/install.lock') && !is_file($rootLock) && !$isInstall && !$isHealth) {
+    header('Location: /index.php?s=/install');
     exit;
 }
 

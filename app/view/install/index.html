@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MKSHOP 安装向导</title>
+<style>
+  :root {
+    --bg: #f5f7fb; --card: #fff; --line: #e5e8ef; --text: #1f2329; --muted: #6b7280;
+    --primary: #2f6bff; --primary-dark: #1f4fd8; --ok: #16a34a; --fail: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+  .wrap { max-width: 880px; margin: 40px auto 60px; padding: 0 16px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
+  .brand h1 { font-size: 22px; margin: 0; }
+  .brand span { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-shadow: 0 6px 24px rgba(31,35,41,.05); }
+  .steps { display: flex; gap: 8px; margin-bottom: 22px; }
+  .step { flex: 1; padding: 10px 12px; border-radius: 8px; background: #f1f4fa; color: var(--muted); font-size: 13px; border: 1px solid transparent; }
+  .step b { display: block; font-size: 15px; color: var(--text); }
+  .step.active { background: #eaf1ff; border-color: #bcd0ff; color: var(--primary-dark); }
+  .step.done { background: #ecfdf3; border-color: #bbf7d0; color: var(--ok); }
+  .pane { display: none; }
+  .pane.active { display: block; }
+  .check-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; border-bottom: 1px dashed var(--line); }
+  .check-item:last-child { border-bottom: 0; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+  .tag.ok { background: #ecfdf3; color: var(--ok); }
+  .tag.fail { background: #fef2f2; color: var(--fail); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  input, select { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; outline: none; background: #fff; }
+  input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47,107,255,.12); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .actions { display: flex; justify-content: space-between; margin-top: 22px; }
+  button { border: 0; border-radius: 8px; padding: 10px 20px; font-size: 14px; cursor: pointer; }
+  button.primary { background: var(--primary); color: #fff; }
+  button.primary:hover { background: var(--primary-dark); }
+  button.primary:disabled { background: #a9bcff; cursor: not-allowed; }
+  button.ghost { background: #eef1f7; color: var(--text); }
+  .alert { display: none; margin-top: 16px; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+  .alert.show { display: block; }
+  .alert.err { background: #fef2f2; color: var(--fail); border: 1px solid #fecaca; }
+  .alert.ok { background: #ecfdf3; color: var(--ok); border: 1px solid #bbf7d0; }
+  .done-box { text-align: center; padding: 20px 0; }
+  .done-box .big { font-size: 20px; color: var(--ok); margin-bottom: 8px; }
+  .cred { display: inline-block; text-align: left; margin: 14px auto 0; background: #f8fafc; border: 1px dashed var(--line); border-radius: 8px; padding: 12px 18px; }
+  code { background: #f1f4fa; padding: 2px 6px; border-radius: 4px; }
+  .installed { text-align: center; padding: 30px 10px; }
+  .installed h2 { color: var(--primary-dark); }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <h1>MKSHOP 安装向导</h1>
+    <span>PHP {{PHP_VERSION}}</span>
+  </div>
+
+  <div class="card">
+    <div id="installed" class="installed" style="display:none">
+      <h2>系统已安装</h2>
+      <p class="muted">检测到 <code>install.lock</code>，安装向导已禁用。</p>
+      <p><a href="/admin/">进入后台</a> ｜ <a href="/">访问前台</a></p>
+    </div>
+
+    <div id="wizard" style="display:none">
+      <div class="steps">
+        <div class="step active" data-step="1"><b>环境检测</b>PHP 与目录权限</div>
+        <div class="step" data-step="2"><b>数据库</b>MySQL / Redis</div>
+        <div class="step" data-step="3"><b>管理员</b>后台账号</div>
+        <div class="step" data-step="4"><b>开始安装</b>写入配置</div>
+      </div>
+
+      <!-- 步骤 1 -->
+      <section class="pane active" data-pane="1">
+        <div id="check-list"><div class="muted">正在检测运行环境…</div></div>
+        <div class="actions">
+          <span></span>
+          <button class="primary" id="to-step-2" disabled>下一步</button>
+        </div>
+      </section>
+
+      <!-- 步骤 2 -->
+      <section class="pane" data-pane="2">
+        <div class="grid">
+          <div><label>数据库主机</label><input id="db_host" value="127.0.0.1"><div class="hint">Docker 部署通常为 <code>mysql</code></div></div>
+          <div><label>端口</label><input id="db_port" value="3306"></div>
+          <div><label>数据库名</label><input id="db_name" value="mkshop"></div>
+          <div><label>用户名</label><input id="db_user" value="root"></div>
+          <div class="full"><label>密码</label><input id="db_pass" type="password" value=""></div>
+          <div><label>Redis 主机</label><input id="redis_host" value="127.0.0.1"><div class="hint">Docker 部署通常为 <code>redis</code></div></div>
+          <div><label>Redis 端口</label><input id="redis_port" value="6379"></div>
+          <div><label>Redis 密码</label><input id="redis_pass" type="password" value=""></div>
+          <div><label>Redis 库号</label><input id="redis_select" value="0"></div>
+        </div>
+        <div class="actions">
+          <button class="ghost" data-back="1">上一步</button>
+          <button class="primary" data-next="3">下一步</button>
+        </div>
+      </section>
+
+      <!-- 步骤 3 -->
+      <section class="pane" data-pane="3">
+        <div class="grid">
+          <div><label>管理员账号</label><input id="admin_user" value="admin"></div>
+          <div><label>管理员密码</label><input id="admin_pass" type="password" placeholder="留空则自动生成"><div class="hint">至少 6 位</div></div>
+        </div>
+        <div class="actions">
+          <button class="ghost" data-back="2">上一步</button>
+          <button class="primary" data-next="4">下一步</button>
+        </div>
+      </section>
+
+      <!-- 步骤 4 -->
+      <section class="pane" data-pane="4">
+        <p>将执行：建库 → 导入 106 张基础表与种子 → 执行幂等增量 → 初始化管理员 → 写入 <code>.env</code> 与安装锁。</p>
+        <p class="muted">可重复执行的环境已做幂等保护，但仍建议使用空库安装。</p>
+        <div class="actions">
+          <button class="ghost" data-back="3">上一步</button>
+          <button class="primary" id="start-install">开始安装</button>
+        </div>
+        <div id="result" style="display:none" class="done-box">
+          <div class="big">安装完成</div>
+          <div class="muted">请重启 PHP 服务使 <code>.env</code> 生效，然后登录后台。</div>
+          <div class="cred" id="cred-box"></div>
+          <p><a href="/admin/">进入后台</a> ｜ <a href="/">访问前台</a></p>
+        </div>
+        <div id="alert" class="alert"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const BASE = '/index.php?s=';
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const installed = '{{INSTALLED}}' === '1';
+
+  if (installed) {
+    $('#installed').style.display = 'block';
+    return;
+  }
+  $('#wizard').style.display = 'block';
+
+  const go = (step) => {
+    $$('.pane').forEach((p) => p.classList.toggle('active', p.dataset.pane === String(step)));
+    $$('.step').forEach((s) => {
+      const n = Number(s.dataset.step);
+      s.classList.toggle('active', n === step);
+      s.classList.toggle('done', n < step);
+    });
+  };
+
+  const post = async (path, data) => {
+    const res = await fetch(BASE + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    return res.json();
+  };
+
+  const check = async () => {
+    try {
+      const res = await post('/install/check');
+      if (res.code !== 0) throw new Error(res.msg || '检测失败');
+      const data = res.data;
+      $('#check-list').innerHTML = data.items.map((it) =>
+        `<div class="check-item"><span>${it.name} <span class="muted">— ${it.value}</span></span>
+         <span class="tag ${it.ok ? 'ok' : 'fail'}">${it.ok ? '通过' : '未通过'}</span></div>`
+      ).join('');
+      $('#to-step-2').disabled = !data.ok;
+    } catch (e) {
+      $('#check-list').innerHTML = `<div class="alert show err">${e.message}</div>`;
+    }
+  };
+
+  $('#to-step-2').addEventListener('click', () => go(2));
+  $$('[data-next]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.next === '3' && !$('#db_name').value.trim()) {
+      alert('请填写数据库名');
+      return;
+    }
+    if (b.dataset.next === '4' && !$('#admin_user').value.trim()) {
+      alert('请填写管理员账号');
+      return;
+    }
+    go(Number(b.dataset.next));
+  }));
+  $$('[data-back]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.back))));
+
+  $('#start-install').addEventListener('click', async () => {
+    const btn = $('#start-install');
+    const alertBox = $('#alert');
+    btn.disabled = true;
+    btn.textContent = '安装中…';
+    alertBox.className = 'alert';
+    try {
+      const res = await post('/install/run', {
+        db_host: $('#db_host').value.trim(),
+        db_port: $('#db_port').value.trim(),
+        db_name: $('#db_name').value.trim(),
+        db_user: $('#db_user').value.trim(),
+        db_pass: $('#db_pass').value,
+        redis_host: $('#redis_host').value.trim(),
+        redis_port: $('#redis_port').value.trim(),
+        redis_pass: $('#redis_pass').value,
+        redis_select: $('#redis_select').value.trim(),
+        admin_user: $('#admin_user').value.trim(),
+        admin_pass: $('#admin_pass').value,
+      });
+      if (res.code !== 0) throw new Error(res.msg || '安装失败');
+      $('#result').style.display = 'block';
+      $('#cred-box').innerHTML =
+        `<div>后台账号：<b>${res.data.admin_user}</b></div>` +
+        (res.data.password ? `<div>初始密码：<b>${res.data.password}</b>（请立即修改）</div>` : '') +
+        `<div>后台地址：<a href="${res.data.admin_url}">${res.data.admin_url}</a></div>`;
+    } catch (e) {
+      alertBox.className = 'alert show err';
+      alertBox.textContent = e.message;
+      btn.disabled = false;
+      btn.textContent = '开始安装';
+    }
+  });
+
+  check();
+})();
+</script>
+</body>
+</html>
