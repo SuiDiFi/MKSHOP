@@ -22,6 +22,7 @@ use app\common\model\OrderDolog;
 use app\common\model\OrderLog;
 use app\common\model\OrderRefund;
 use app\common\model\RechargeLog;
+use mks\util\Hook;
 use think\facade\Cache;
 use think\facade\Db;
 
@@ -258,6 +259,8 @@ class OrderService
             Db::name('member')->where('id', (int) $order->getAttr('uid'))->inc('cost', (float) $order->getAttr('total_price'))->update();
         }
         self::log($order, '订单支付成功（' . (string) $payOrder->getAttr('payment_gateway') . '）');
+        // 插件钩子：支付成功（异常不阻断主流程）
+        Hook::fire('order.paid', self::payload($order, ['pay_type' => (string) $payOrder->getAttr('payment_gateway')]));
         // 自动发货（失败不回滚支付，订单停留 status=1 等人工）
         try {
             self::deliver(Order::findOrEmpty((int) $order->getAttr('id')));
@@ -394,6 +397,26 @@ class OrderService
         } catch (\Throwable $e) {
             self::log($order, '供货货款异常：' . $e->getMessage());
         }
+        // 插件钩子：订单完成（结算后）
+        Hook::fire('order.success', self::payload($order));
+    }
+
+    /**
+     * 插件钩子上下文（只读快照，避免插件误改模型）
+     */
+    protected static function payload(Order $order, array $extra = []): array
+    {
+        return array_merge([
+            'order_id'    => (int) $order->getAttr('id'),
+            'ordersn'     => (string) $order->getAttr('ordersn'),
+            'uid'         => (int) $order->getAttr('uid'),
+            'goods_id'    => (int) $order->getAttr('goods_id'),
+            'goods_name'  => (string) $order->getAttr('goods_name'),
+            'quantity'    => (int) $order->getAttr('quantity'),
+            'total_price' => (string) $order->getAttr('total_price'),
+            'vip_id'      => (int) $order->getAttr('vip_id'),
+            'supplier_id' => (int) $order->getAttr('supplier_id'),
+        ], $extra);
     }
 
     /**
@@ -540,6 +563,13 @@ class OrderService
         } catch (\Throwable $e) {
             self::log($order, '佣金回冲异常：' . $e->getMessage());
         }
+        // 插件钩子：订单退款
+        Hook::fire('order.refund', self::payload($order, [
+            'refund_money' => $money,
+            'back_rate'    => (string) $money === '0.0000' || (string) $order->getAttr('total_price') === '0.0000'
+                ? '0'
+                : bcdiv($money, (string) $order->getAttr('total_price'), 4),
+        ]));
     }
 
     /**

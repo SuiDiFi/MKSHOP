@@ -1,0 +1,17 @@
+{
+  "name": "demo",
+  "title": "演示插件",
+  "version": "1.0.0",
+  "author": "MKSHOP",
+  "description": "插件框架验收示例：注入后台菜单，监听订单支付/完成/退款钩子并写入运行日志。",
+  "hooks": ["order.paid", "order.success", "order.refund"],
+  "menus": [
+    {
+      "title": "演示插件",
+      "path": "addon-demo",
+      "icon": "magic-stick",
+      "component": "@/views/setting/addonDemo",
+      "sort": 87
+    }
+  ]
+}

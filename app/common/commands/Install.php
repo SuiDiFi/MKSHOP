@@ -109,6 +109,8 @@ class Install extends Command
             $output->writeln("  导入 mks_m6.sql: {$n} 条语句（幂等） — <info>OK</info>");
             $n = SqlImport::importFile($pdo, $sqlDir . 'mks_m6b.sql');
             $output->writeln("  导入 mks_m6b.sql: {$n} 条语句（幂等） — <info>OK</info>");
+            $n = SqlImport::importFile($pdo, $sqlDir . 'mks_m6c.sql');
+            $output->writeln("  导入 mks_m6c.sql: {$n} 条语句（幂等） — <info>OK</info>");
             // 主站域名兜底（后续可在后台补真实域名）
             $hasMain = $pdo->query("SELECT id FROM `mks_sys_url` WHERE is_main = 1 LIMIT 1")->fetch();
             if (!$hasMain) {

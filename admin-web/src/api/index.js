@@ -202,3 +202,14 @@ export const merchantSettlementIndex = (params) => mksRequest('/admin/merchant/s
 export const merchantApplyIndex = (params) => mksRequest('/admin/merchant_apply/index', 'GET', params);
 export const merchantApplyRead = (id) => mksRequest(`/admin/merchant_apply/read/${id}`, 'GET');
 export const merchantApplyAudit = (id, data) => mksRequest(`/admin/merchant_apply/audit/${id}`, 'POST', {}, data);
+
+// ─── 插件（M6-C）───
+export const addonIndex = (params) => mksRequest('/admin/addon/index', 'GET', params);
+export const addonScan = () => mksRequest('/admin/addon/scan', 'GET');
+export const addonRead = (id) => mksRequest(`/admin/addon/read/${id}`, 'GET');
+export const addonHooks = () => mksRequest('/admin/addon/hooks', 'GET');
+export const addonInstall = (name) => mksRequest('/admin/addon/install', 'POST', {}, { name });
+export const addonEnable = (id) => mksRequest('/admin/addon/enable', 'POST', {}, { id });
+export const addonDisable = (id) => mksRequest('/admin/addon/disable', 'POST', {}, { id });
+export const addonUninstall = (id, dropData = 0) => mksRequest('/admin/addon/uninstall', 'POST', {}, { id, drop_data: dropData });
+export const addonConfigSave = (id, form) => mksRequest('/admin/addon/config_save', 'POST', {}, { id, form });

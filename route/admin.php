@@ -225,6 +225,18 @@ Route::group('admin', function () {
         Route::get('merchant_apply/index', 'admin.MerchantApplyController/index');
         Route::get('merchant_apply/read/:id', 'admin.MerchantApplyController/read');
         Route::post('merchant_apply/audit/:id', 'admin.MerchantApplyController/audit');
+
+        // ── M6 插件模块 ──────────────────────────────────────
+        // 插件管理（权限点 addon/*；MVP 仅本地目录安装）
+        Route::get('addon/index', 'admin.AddonController/index');
+        Route::get('addon/scan', 'admin.AddonController/scan');
+        Route::get('addon/read/:id', 'admin.AddonController/read');
+        Route::get('addon/hooks', 'admin.AddonController/hooks');
+        Route::post('addon/install', 'admin.AddonController/install');
+        Route::post('addon/enable', 'admin.AddonController/enable');
+        Route::post('addon/disable', 'admin.AddonController/disable');
+        Route::post('addon/uninstall', 'admin.AddonController/uninstall');
+        Route::post('addon/config_save', 'admin.AddonController/config_save');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,
