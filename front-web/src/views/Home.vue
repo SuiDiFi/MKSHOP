@@ -15,14 +15,35 @@
 
       <!-- 默认布局：分类 + 搜索 + 商品网格 -->
       <template v-else>
+        <div class="hero">
+          <div class="hero-main">
+            <div class="hero-title">{{ site.name || 'MKSHOP 商城' }}</div>
+            <div class="hero-desc">{{ site.desc || '自动发卡 · 虚拟充值 · 极速到账' }}</div>
+            <el-input v-model="keyword" placeholder="搜索商品，回车查找" clearable style="max-width: 380px; margin-top: 14px"
+              @keyup.enter="doSearch">
+              <template #append><el-button :icon="Search" @click="doSearch">搜索</el-button></template>
+            </el-input>
+          </div>
+          <div class="hero-links">
+            <div class="hero-link" v-for="c in cates.slice(0, 6)" :key="c.id" @click="$router.push(`/category?cate=${c.id}`)">
+              {{ c.name }}
+            </div>
+          </div>
+        </div>
+
+        <div v-if="notices.length" class="notice-bar">
+          <el-icon color="#e6a23c"><Bell /></el-icon>
+          <div class="notice-marquee" @click="$router.push(`/notice/${notices[0].id}`)">
+            {{ notices[0].title }}<span style="color:#c0c4cc; margin-left:10px">{{ notices[0].summary }}</span>
+          </div>
+          <el-button link size="small" @click="$router.push('/notices')">更多</el-button>
+        </div>
+
         <div style="display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; align-items:center;">
           <el-radio-group v-model="activeCate" @change="doSearch">
             <el-radio-button :value="0">全部</el-radio-button>
             <el-radio-button v-for="c in cates" :key="c.id" :value="c.id">{{ c.name }}</el-radio-button>
           </el-radio-group>
-          <el-input v-model="keyword" placeholder="搜索商品" clearable style="width: 220px" @keyup.enter="doSearch">
-            <template #append><el-button :icon="Search" @click="doSearch" /></template>
-          </el-input>
         </div>
 
         <div v-loading="loading">
@@ -56,8 +77,8 @@
 <script setup>
 import { ref, onMounted, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search } from '@element-plus/icons-vue';
-import { goodsCates, goodsIndex } from '@/api';
+import { Search, Bell } from '@element-plus/icons-vue';
+import { goodsCates, goodsIndex, homeIndex } from '@/api';
 import { diyPcHome } from '@/api';
 
 const router = useRouter();
@@ -68,6 +89,8 @@ const list = ref([]);
 const total = ref(0);
 const loading = ref(false);
 const query = ref({ page: 1, limit: 12 });
+const site = ref({});
+const notices = ref([]);
 
 // DIY
 const diyMode = ref(false);
@@ -115,7 +138,14 @@ onMounted(async () => {
       return;
     }
   } catch (e) { /* 回退默认布局 */ }
-  goodsCates().then((res) => { cates.value = res.data || []; }).catch(() => {});
+  try {
+    const home = await homeIndex();
+    site.value = home.data?.site || {};
+    cates.value = home.data?.cates || [];
+    notices.value = home.data?.notices || [];
+  } catch (e) {
+    goodsCates().then((res) => { cates.value = res.data || []; }).catch(() => {});
+  }
   load();
 });
 </script>

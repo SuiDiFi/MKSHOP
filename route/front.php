@@ -16,12 +16,24 @@ Route::group('front', function () {
         Route::get('goods/read/:id', 'front.GoodsController/read');      // 商品详情
         Route::get('goods/cates', 'front.GoodsController/cates');        // 分类导航
         Route::get('diy/pc_home', 'front.DiyController/pcHome');         // DIY 首页配置
+        // M5：首页聚合 / 分类树 / 公告 / 帮助中心
+        Route::get('index/index', 'front.IndexController/index');        // 首页聚合数据
+        Route::get('category/index', 'front.CategoryController/index');  // 分类树
+        Route::get('notice/index', 'front.ArticleController/noticeIndex'); // 公告列表
+        Route::get('notice/info/:id', 'front.ArticleController/info');   // 公告详情
+        Route::get('support/list', 'front.ArticleController/helpList');  // 帮助中心列表
+        Route::get('support/detail/:id', 'front.ArticleController/info'); // 帮助详情
     });
 
     // ── 登录组 ──
     Route::group(function () {
         Route::get('member/info', 'front.MemberController/info');        // 我的信息
+        Route::get('member/money', 'front.MemberController/money');      // 余额明细（M5）
         Route::post('member/logout', 'front.MemberController/logout');   // 退出
+        // 在线客服（M5）
+        Route::post('kefu/start', 'front.KefuController/start');          // 发起/续接会话
+        Route::get('kefu/messages', 'front.KefuController/messages');     // 拉取消息
+        Route::post('kefu/send', 'front.KefuController/send');            // 发送消息
         Route::post('member/bind_parent', 'front.MemberController/bind_parent'); // 绑定上级（M4）
         Route::post('order/buy', 'front.OrderController/buy');           // 下单（余额支付）
         Route::post('order/pay', 'front.OrderController/pay');           // 待支付单继续支付

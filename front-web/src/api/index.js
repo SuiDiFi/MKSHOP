@@ -11,7 +11,21 @@ export const memberBindParent = (data) => mksRequest('/front/member/bind_parent'
 export const goodsCates = () => mksRequest('/front/goods/cates', 'GET');
 export const goodsIndex = (params) => mksRequest('/front/goods/index', 'GET', params);
 export const goodsRead = (id) => mksRequest(`/front/goods/read/${id}`, 'GET');
-export const diyPcHome = () => mksRequest('/front/diy/pc_home', 'GET');
+export const diyPcHome = (params) => mksRequest('/front/diy/pc_home', 'GET', params);
+
+// ─── M5 首页/分类/内容 ───
+export const homeIndex = () => mksRequest('/front/index/index', 'GET');
+export const categoryIndex = () => mksRequest('/front/category/index', 'GET');
+export const noticeIndex = (params) => mksRequest('/front/notice/index', 'GET', params);
+export const noticeInfo = (id) => mksRequest(`/front/notice/info/${id}`, 'GET');
+export const helpList = (params) => mksRequest('/front/support/list', 'GET', params);
+export const helpInfo = (id) => mksRequest(`/front/support/detail/${id}`, 'GET');
+export const memberMoney = (params) => mksRequest('/front/member/money', 'GET', params);
+
+// ─── M5 在线客服 ───
+export const kefuStart = (source = 'pc') => mksRequest('/front/kefu/start', 'POST', {}, { source });
+export const kefuMessages = (params) => mksRequest('/front/kefu/messages', 'GET', params);
+export const kefuSend = (data) => mksRequest('/front/kefu/send', 'POST', {}, data);
 
 // ─── 订单 ───
 export const orderBuy = (data) => mksRequest('/front/order/buy', 'POST', {}, data);

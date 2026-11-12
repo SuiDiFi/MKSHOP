@@ -75,6 +75,7 @@ class MemberController extends BaseController
             'username'    => $username,
             'password'    => $password,
             'nickname'    => '用户' . substr((string) time(), -6),
+            'avatar'      => '',
             'user_where'  => 'pc',
             'reg_ip'      => (string) $this->request->ip(),
             'reg_host'    => (string) $this->request->host(),
@@ -128,6 +129,38 @@ class MemberController extends BaseController
             return $this->fail('会员不存在');
         }
         return $this->ok(['userinfo' => $member->hidden(['password', 'trade_password'])->toArray()]);
+    }
+
+    /**
+     * 我的余额明细（M5：会员中心资金流水）
+     */
+    public function money()
+    {
+        $uid = (int) ($this->request->memberId ?? 0);
+        $member = Member::findOrEmpty($uid);
+        if ($member->isEmpty()) {
+            return $this->fail('请先登录');
+        }
+        $page  = max(1, (int) $this->request->param('page', 1));
+        $limit = min(50, max(1, (int) $this->request->param('limit', 15)));
+        $total = \app\common\model\MemberMoney::where('uid', $uid)->count();
+        $list  = \app\common\model\MemberMoney::where('uid', $uid)
+            ->order('id desc')->page($page, $limit)
+            ->field('id,money,change_type,trade_type,before,after,extend_id,mark,create_time')
+            ->select()->toArray();
+        // 业务类型名称（sys_dict trade_type）
+        $dict = \app\common\model\SysDict::where('dict_type', 'trade_type')
+            ->where('status', 1)->column('label', 'code');
+        foreach ($list as &$row) {
+            $row['trade_type_text'] = (string) ($dict[(string) $row['trade_type']] ?? '其他');
+        }
+        return $this->ok([
+            'list'    => $list,
+            'count'   => $total,
+            'balance' => (string) $member->getAttr('balance'),
+            'total_income'  => (string) \app\common\model\MemberMoney::where('uid', $uid)->where('change_type', 1)->sum('money'),
+            'total_expense' => (string) \app\common\model\MemberMoney::where('uid', $uid)->where('change_type', 2)->sum('money'),
+        ]);
     }
 
     /**
