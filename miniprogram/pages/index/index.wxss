@@ -1,0 +1,13 @@
+.head { background: linear-gradient(135deg, #1d6fe8, #57a3ff); padding: 40rpx 32rpx 56rpx; color: #fff; }
+.brand { font-size: 40rpx; font-weight: 800; }
+.slogan { font-size: 24rpx; opacity: .85; margin-top: 10rpx; }
+.search { margin-top: 28rpx; background: rgba(255,255,255,.95); color: #909399; border-radius: 40rpx; height: 72rpx; display: flex; align-items: center; padding: 0 28rpx; gap: 12rpx; font-size: 26rpx; }
+.head + .wrap { margin-top: -24rpx; }
+.notice { display: flex; align-items: center; gap: 12rpx; background: #fff; border-radius: 12rpx; padding: 20rpx 24rpx; margin-top: 20rpx; }
+.notice-tag { background: #eef4ff; color: #1d6fe8; font-size: 22rpx; padding: 2rpx 10rpx; border-radius: 6rpx; }
+.notice-text { flex: 1; font-size: 26rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.quick { display: flex; background: #fff; border-radius: 16rpx; padding: 28rpx 0; margin-top: 20rpx; }
+.quick-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10rpx; font-size: 24rpx; color: #606266; }
+.quick-item .qi { font-size: 44rpx; }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin: 32rpx 4rpx 20rpx; }
+.sec-title { font-size: 30rpx; font-weight: 700; }

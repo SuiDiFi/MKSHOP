@@ -1,0 +1,22 @@
+<view class="status-bar">
+  <view class="dot {{closed ? 'off' : ''}}"></view>
+  <text>{{ closed ? '会话已结束' : '客服在线，通常几分钟内回复' }}</text>
+  <text wx:if="{{closed}}" class="reopen" bindtap="restart">重新发起</text>
+</view>
+
+<scroll-view class="chat" scroll-y scroll-into-view="{{intoView}}" scroll-with-animation>
+  <view wx:for="{{messages}}" wx:key="id" id="m{{item.id}}" class="msg {{item.cls}}">
+    <view wx:if="{{item.from_type === 3}}" class="sys">{{ item.content }}</view>
+    <block wx:else>
+      <view class="avatar">{{ item.avatar }}</view>
+      <view class="bubble">{{ item.content }}</view>
+    </block>
+  </view>
+  <view wx:if="{{!loading && !messages.length}}" class="empty"><view class="big">💬</view>暂无消息</view>
+  <view style="height: 20rpx"></view>
+</scroll-view>
+
+<view class="composer">
+  <input class="input" placeholder="请输入问题" value="{{content}}" bindinput="onInput" confirm-type="send" bindconfirm="send" disabled="{{closed}}" />
+  <view class="send {{ closed || !content ? 'off' : '' }}" bindtap="send">发送</view>
+</view>

@@ -1,0 +1,46 @@
+<view class="head">
+  <view class="brand">{{ site.name || 'MKSHOP 商城' }}</view>
+  <view class="slogan">{{ site.desc || '自动发卡 · 虚拟充值 · 极速到账' }}</view>
+  <view class="search" bindtap="goCategory">
+    <text class="ico">🔍</text>
+    <text class="ph">搜索商品</text>
+  </view>
+</view>
+
+<view class="wrap">
+  <view wx:if="{{notices.length}}" class="notice" bindtap="goKefu">
+    <text class="notice-tag">公告</text>
+    <text class="notice-text">{{ notices[0].title }}</text>
+  </view>
+
+  <view class="quick">
+    <view class="quick-item" bindtap="goCategory"><text class="qi">🗂️</text><text>全部分类</text></view>
+    <view class="quick-item" bindtap="goOrders"><text class="qi">📋</text><text>我的订单</text></view>
+    <view class="quick-item" bindtap="goMember"><text class="qi">💰</text><text>会员中心</text></view>
+    <view class="quick-item" bindtap="goKefu"><text class="qi">💬</text><text>在线客服</text></view>
+  </view>
+
+  <view class="section-head">
+    <text class="sec-title">热门推荐</text>
+    <text class="muted" bindtap="goCategory">查看全部 ›</text>
+  </view>
+
+  <view wx:for="{{hot}}" wx:key="id" class="goods-row" data-id="{{item.id}}" bindtap="goGoods">
+    <view class="thumb">
+      <image wx:if="{{item.goods_img}}" src="{{item.goods_img}}" mode="aspectFill" />
+      <text wx:else>🛍️</text>
+    </view>
+    <view class="info">
+      <view class="name">{{ item.goods_name }}</view>
+      <view class="muted" style="margin-top:8rpx">已售 {{ item.sales_num || 0 }}</view>
+      <view class="meta">
+        <view class="price"><text class="small">¥</text>{{ item.real_price }}</view>
+        <text wx:if="{{item.stock_num <= 0}}" class="tag gray">缺货</text>
+        <text wx:elif="{{item.ishot}}" class="tag red">热销</text>
+        <text wx:else class="tag">在售</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && !hot.length}}" class="empty"><view class="big">🛒</view>暂无商品</view>
+</view>

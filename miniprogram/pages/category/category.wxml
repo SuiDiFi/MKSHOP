@@ -1,0 +1,37 @@
+<view class="cate-wrap">
+  <scroll-view class="side" scroll-y>
+    <view class="side-item {{activeCate === 0 ? 'active' : ''}}" data-id="0" bindtap="pick">全部</view>
+    <view wx:for="{{cates}}" wx:key="id" class="side-item {{activeCate === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="pick">{{ item.name }}</view>
+  </scroll-view>
+
+  <view class="main">
+    <view class="search">
+      <text class="ico">🔍</text>
+      <input placeholder="搜索商品" confirm-type="search" value="{{keyword}}" bindconfirm="onSearch" />
+    </view>
+
+    <scroll-view class="list" scroll-y>
+      <view wx:for="{{list}}" wx:key="id" class="goods-row" data-id="{{item.id}}" bindtap="goGoods">
+        <view class="thumb">
+          <image wx:if="{{item.goods_img}}" src="{{item.goods_img}}" mode="aspectFill" />
+          <text wx:else>🛍️</text>
+        </view>
+        <view class="info">
+          <view class="name">{{ item.goods_name }}</view>
+          <view class="meta">
+            <view class="price"><text class="small">¥</text>{{ item.real_price }}</view>
+            <text wx:if="{{item.stock_num <= 0}}" class="tag gray">缺货</text>
+            <text wx:else class="tag green">在售</text>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{!loading && !list.length}}" class="empty"><view class="big">📦</view>该分类暂无商品</view>
+      <view wx:if="{{total > limit}}" class="pager">
+        <text class="pg {{page <= 1 ? 'off' : ''}}" bindtap="prev">上一页</text>
+        <text class="muted">{{page}}/{{totalPages}}</text>
+        <text class="pg" bindtap="next">下一页</text>
+      </view>
+      <view style="height: 40rpx"></view>
+    </scroll-view>
+  </view>
+</view>

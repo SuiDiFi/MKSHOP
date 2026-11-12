@@ -1,0 +1,23 @@
+<view class="login-head">
+  <view class="logo">🛒</view>
+  <view class="name">MKSHOP 商城</view>
+  <view class="muted">登录后即可下单、查看订单与卡密</view>
+</view>
+
+<view class="wrap">
+  <view class="card">
+    <view class="field" style="margin-top:0">
+      <view class="label">账号</view>
+      <input class="input" placeholder="请输入账号" value="{{username}}" data-field="username" bindinput="onInput" />
+    </view>
+    <view class="field">
+      <view class="label">密码</view>
+      <input class="input" password placeholder="请输入密码" value="{{password}}" data-field="password" bindinput="onInput" />
+    </view>
+    <view class="btn block" style="margin-top:40rpx" bindtap="submit">{{ loading ? '登录中…' : '登录' }}</view>
+  </view>
+
+  <view class="tip muted">
+    小程序 MVP 暂未接入微信授权登录，使用商城账号密码登录；支付走余额支付。
+  </view>
+</view>

@@ -1,0 +1,46 @@
+<view wx:if="{{goods.id}}">
+  <view class="hero">
+    <image wx:if="{{goods.goods_img}}" src="{{goods.goods_img}}" mode="aspectFill" />
+    <view wx:else class="ph">🛍️</view>
+  </view>
+
+  <view class="wrap">
+    <view class="card">
+      <view class="price" style="font-size:44rpx"><text class="small">¥</text>{{ goods.real_price }}</view>
+      <view class="title">{{ goods.goods_name }}</view>
+      <view class="muted" style="margin-top:12rpx">已售 {{ goods.sales_num || 0 }} · 库存 {{ goods.stock_num }}</view>
+    </view>
+
+    <view class="card">
+      <view wx:if="{{needAccount}}" class="field" style="margin-top:0">
+        <view class="label">充值账号</view>
+        <input class="input" placeholder="请输入充值账号" value="{{rechargeAccount}}" bindinput="onAccount" />
+      </view>
+      <view class="field" style="margin-top:{{needAccount ? 20 : 0}}rpx">
+        <view class="label">购买数量</view>
+        <view class="stepper">
+          <view class="step" bindtap="dec">−</view>
+          <input class="qty" type="number" value="{{quantity}}" bindblur="onQty" />
+          <view class="step" bindtap="inc">＋</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{goods.goods_info}}" class="card">
+      <view class="sec">商品详情</view>
+      <rich-text nodes="{{goods.goods_info}}"></rich-text>
+    </view>
+  </view>
+
+  <view class="buybar">
+    <view>
+      <view class="muted">应付</view>
+      <view class="price" style="font-size:36rpx"><text class="small">¥</text>{{ total }}</view>
+    </view>
+    <view class="btn buy {{ (buying || goods.stock_num <= 0) ? 'off' : '' }}" bindtap="doBuy">
+      {{ goods.stock_num <= 0 ? '暂时缺货' : (buying ? '处理中…' : '立即购买') }}
+    </view>
+  </view>
+</view>
+
+<view wx:elif="{{!loading}}" class="empty"><view class="big">🔍</view>商品不存在或已下架</view>

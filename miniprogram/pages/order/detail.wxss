@@ -1,0 +1,9 @@
+.status-card { background: linear-gradient(135deg, #1d6fe8, #57a3ff); color: #fff; border-radius: 16rpx; padding: 36rpx 28rpx; }
+.status { font-size: 38rpx; font-weight: 800; }
+.hint { font-size: 24rpx; opacity: .9; margin-top: 10rpx; }
+.line { display: flex; justify-content: space-between; padding: 14rpx 0; font-size: 27rpx; gap: 24rpx; }
+.line text:last-child { text-align: right; word-break: break-all; }
+.sec { font-size: 28rpx; font-weight: 700; }
+.cardkey { background: #f7f8fa; border-radius: 12rpx; padding: 18rpx; margin-top: 14rpx; }
+.ck { font-size: 26rpx; margin-top: 6rpx; word-break: break-all; }
+.link { color: #1d6fe8; font-size: 25rpx; word-break: break-all; }

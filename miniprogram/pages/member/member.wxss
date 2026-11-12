@@ -1,0 +1,11 @@
+.member-head { background: linear-gradient(135deg, #1d6fe8, #57a3ff); color: #fff; padding: 52rpx 32rpx 68rpx; display: flex; align-items: center; gap: 24rpx; }
+.avatar { width: 108rpx; height: 108rpx; border-radius: 50%; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 700; }
+.who { flex: 1; }
+.nick { font-size: 34rpx; font-weight: 700; }
+.acct { font-size: 24rpx; opacity: .85; margin-top: 8rpx; }
+.quit { font-size: 24rpx; border: 2rpx solid rgba(255,255,255,.6); border-radius: 24rpx; padding: 6rpx 20rpx; }
+.wallet { display: flex; justify-content: space-between; background: linear-gradient(135deg, #2b7bf0, #4f9bff); color: #fff; border-radius: 16rpx; padding: 28rpx; margin-top: -36rpx; }
+.money { font-size: 38rpx; font-weight: 800; margin-top: 8rpx; }
+.menu { background: #fff; border-radius: 16rpx; margin-top: 20rpx; overflow: hidden; }
+.menu-item { display: flex; justify-content: space-between; padding: 30rpx 28rpx; border-bottom: 2rpx solid #f6f7f9; font-size: 28rpx; }
+.menu-item:last-child { border-bottom: 0; }

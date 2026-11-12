@@ -1,0 +1,12 @@
+page { padding-bottom: 140rpx; }
+.hero { width: 100%; height: 520rpx; background: #f6f7f9; display: flex; align-items: center; justify-content: center; }
+.hero image { width: 100%; height: 100%; }
+.hero .ph { font-size: 100rpx; }
+.title { font-size: 32rpx; font-weight: 700; margin-top: 12rpx; line-height: 1.4; }
+.stepper { display: flex; align-items: center; border: 2rpx solid #e4e7ed; border-radius: 12rpx; width: 300rpx; height: 76rpx; overflow: hidden; }
+.stepper .step { width: 90rpx; text-align: center; font-size: 36rpx; color: #1d6fe8; }
+.stepper .qty { flex: 1; text-align: center; font-size: 28rpx; }
+.sec { font-size: 28rpx; font-weight: 700; margin-bottom: 12rpx; }
+.buybar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 2rpx solid #eee; padding: 16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; }
+.buy { min-width: 260rpx; }
+.buy.off { background: #c9d4e3; }

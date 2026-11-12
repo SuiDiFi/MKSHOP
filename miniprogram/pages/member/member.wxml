@@ -1,0 +1,29 @@
+<view class="member-head">
+  <view class="avatar">{{ initial }}</view>
+  <view class="who">
+    <view class="nick">{{ user.nickname || user.username || '会员' }}</view>
+    <view class="acct">账号：{{ user.username }} · Lv.{{ user.level_id || 1 }}</view>
+  </view>
+  <view class="quit" wx:if="{{isLogin}}" bindtap="logout">退出</view>
+</view>
+
+<view class="wrap">
+  <view class="wallet">
+    <view>
+      <view class="muted" style="color:rgba(255,255,255,.8)">账户余额</view>
+      <view class="money">¥{{ user.balance || '0.0000' }}</view>
+    </view>
+    <view>
+      <view class="muted" style="color:rgba(255,255,255,.8)">可提现佣金</view>
+      <view class="money">¥{{ user.commission_money || '0.0000' }}</view>
+    </view>
+  </view>
+
+  <view class="menu">
+    <view class="menu-item" bindtap="goOrders"><text>📋 我的订单</text><text class="muted">›</text></view>
+    <view class="menu-item" bindtap="goKefu"><text>💬 在线客服</text><text class="muted">›</text></view>
+    <view class="menu-item" bindtap="goHome"><text>🛍️ 继续购物</text><text class="muted">›</text></view>
+  </view>
+
+  <view class="muted" style="text-align:center; margin-top:40rpx">MKSHOP · 自动发卡商城</view>
+</view>

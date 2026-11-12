@@ -1,0 +1,39 @@
+<view wx:if="{{order.ordersn}}" class="wrap">
+  <view class="status-card">
+    <view class="status">{{ status_text }}</view>
+    <view class="hint">{{ order.status === 0 ? '请尽快完成余额支付' : (order.status === 3 ? '订单已完成，卡密信息见下方' : '系统正在处理，请稍候') }}</view>
+  </view>
+
+  <view class="card">
+    <view class="line"><text class="muted">订单号</text><text>{{ order.ordersn }}</text></view>
+    <view class="line"><text class="muted">商品</text><text>{{ order.goods_name }}</text></view>
+    <view class="line"><text class="muted">数量</text><text>×{{ order.quantity }}</text></view>
+    <view class="line"><text class="muted">金额</text><text class="price">¥{{ order.total_price }}</text></view>
+    <view class="line"><text class="muted">支付方式</text><text>{{ order.pay_type === 'balance' ? '余额支付' : (order.pay_type || '—') }}</text></view>
+    <view wx:if="{{order.recharge_account}}" class="line"><text class="muted">充值账号</text><text>{{ order.recharge_account }}</text></view>
+    <view class="line"><text class="muted">下单时间</text><text>{{ create_text }}</text></view>
+  </view>
+
+  <view wx:if="{{order.status === 0}}" class="card">
+    <view class="btn block" bindtap="{{ paying ? '' : 'doPay' }}">{{ paying ? '支付中…' : '余额支付' }}</view>
+  </view>
+
+  <view wx:if="{{cards.length}}" class="card">
+    <view class="row" style="margin-bottom:16rpx">
+      <text class="sec">卡密信息（{{ cards.length }}）</text>
+      <text class="muted">点击复制</text>
+    </view>
+    <view wx:for="{{cards}}" wx:key="id" class="cardkey" data-no="{{item.card_no}}" data-pwd="{{item.card_password}}" bindtap="copyCard">
+      <view class="muted">#{{ index + 1 }}</view>
+      <view class="ck">卡号：{{ item.card_no }}</view>
+      <view class="ck">卡密：{{ item.card_password }}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{order.status === 3 && !cards.length}}" class="card">
+    <view class="muted">该商品为虚拟直充，已完成充值，无需卡密。</view>
+    <view wx:if="{{order.recharge_url}}" class="link" bindtap="goOrders" style="margin-top:12rpx">充值链接：{{ order.recharge_url }}</view>
+  </view>
+</view>
+
+<view wx:elif="{{!loading}}" class="empty"><view class="big">🔍</view>订单不存在</view>

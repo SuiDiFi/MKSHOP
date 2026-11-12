@@ -1,0 +1,30 @@
+<view class="tabs">
+  <view wx:for="{{tabs}}" wx:key="label" class="tab {{active === item.value ? 'active' : ''}}" data-value="{{item.value}}" bindtap="pick">{{ item.label }}</view>
+</view>
+
+<view class="wrap">
+  <view wx:for="{{list}}" wx:key="id" class="order-card" data-sn="{{item.ordersn}}" bindtap="goDetail">
+    <view class="row">
+      <text class="muted">{{ item.ordersn }}</text>
+      <text class="status">{{ item.status_text }}</text>
+    </view>
+    <view class="goods">
+      <view class="thumb">
+        <image wx:if="{{item.goods_img}}" src="{{item.goods_img}}" mode="aspectFill" />
+        <text wx:else>🛍️</text>
+      </view>
+      <view class="info">
+        <view class="name">{{ item.goods_name }}</view>
+        <view class="muted" style="margin-top:8rpx">×{{ item.quantity }}</view>
+      </view>
+      <view class="price"><text class="small">¥</text>{{ item.total_price }}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && !list.length}}" class="empty">
+    <view class="big">📋</view>
+    <view>暂无订单</view>
+    <view class="btn ghost" style="margin-top:24rpx; width:260rpx" bindtap="goLogin">去登录</view>
+  </view>
+  <view wx:if="{{list.length && list.length < total}}" class="more muted" bindtap="more">加载更多</view>
+</view>

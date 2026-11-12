@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/category/category",
+    "pages/goods/detail",
+    "pages/orders/orders",
+    "pages/order/detail",
+    "pages/member/member",
+    "pages/login/login",
+    "pages/kefu/kefu"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "MKSHOP 商城",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f4f5f7"
+  },
+  "tabBar": {
+    "color": "#909399",
+    "selectedColor": "#1d6fe8",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/category/category", "text": "分类" },
+      { "pagePath": "pages/orders/orders", "text": "订单" },
+      { "pagePath": "pages/member/member", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
