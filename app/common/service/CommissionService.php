@@ -208,12 +208,12 @@ class CommissionService
                 ]);
                 continue;
             }
-            // 已入账：按层回冲（幂等键 + 余额不足自动封顶）
+            // 已入账：按层回冲各层实得佣金（price1/price2 × backRate；幂等键 + 余额不足自动封顶）
             $amounts = [
-                [(int) $row->getAttr('uid1'), $back],
-                [(int) $row->getAttr('uid2'), $back],
+                [(int) $row->getAttr('uid1'), bcmul((string) $row->getAttr('price1'), $backRate, 4)],
+                [(int) $row->getAttr('uid2'), bcmul((string) $row->getAttr('price2'), $backRate, 4)],
             ];
-            $backed1 = '0';
+            $backedNow = '0';
             foreach ($amounts as [$uid, $money]) {
                 if ($uid <= 0 || bccomp($money, '0', 4) <= 0) {
                     continue;
@@ -227,9 +227,9 @@ class CommissionService
                     '订单退款佣金回冲 ' . (string) Order::where('id', $orderId)->value('ordersn'),
                     'COMMISSIONBACK:' . $orderId . ':' . $row->getAttr('id') . ':' . $uid
                 );
-                $backed1 = bcadd($backed1, bcsub((string) $r['before'], (string) $r['after'], 4), 4);
+                $backedNow = bcadd($backedNow, bcsub((string) $r['before'], (string) $r['after'], 4), 4);
             }
-            $newBacked = bcadd($backed, $back, 4);
+            $newBacked = bcadd($backed, $backedNow, 4);
             $row->save([
                 'back_commision_price' => $newBacked,
                 'sure_status'          => bccomp($newBacked, $total, 4) >= 0 ? OrderCommission::SURE_REFUND : OrderCommission::SURE_PART,

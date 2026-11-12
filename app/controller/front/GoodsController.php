@@ -25,7 +25,7 @@ class GoodsController extends BaseController
     }
 
     /**
-     * 在售商品列表
+     * 在售商品列表（分站上下文：可见范围过滤 + 分站售价）
      */
     public function index()
     {
@@ -34,6 +34,10 @@ class GoodsController extends BaseController
         $query = Goods::where('status', 1)
             ->whereIn('check_status', [3, 9])
             ->where('delete_time', 0);
+        $vipSite = $this->request->vipSite ?? null;
+        if ($vipSite) {
+            $query = \app\common\service\VipSiteService::visibleScope($query, (int) $vipSite->getAttr('id'));
+        }
         $keyword = (string) $this->request->param('keyword', '');
         if ($keyword !== '') {
             $query = $query->whereLike('goods_name', '%' . $keyword . '%');
@@ -55,11 +59,17 @@ class GoodsController extends BaseController
             ->field('id,goods_no,goods_name,goods_short_name,goods_type,face_value,real_price,goods_img,goods_tags,ishot,stock_num,sales_num,virtual_num,recharge_time_type,recharge_time_value,start_count,end_count,num_count')
             ->select()
             ->toArray();
+        if ($vipSite) {
+            foreach ($list as &$r) {
+                $r['base_price'] = (string) $r['real_price'];
+                $r['real_price'] = $vipSite->priceFor((string) $r['real_price']);
+            }
+        }
         return $this->ok(['list' => $list, 'count' => $total]);
     }
 
     /**
-     * 商品详情（含实时可售库存与数量档位）
+     * 商品详情（含实时可售库存与数量档位；分站上下文调价）
      */
     public function read(int $id)
     {
@@ -67,7 +77,20 @@ class GoodsController extends BaseController
         if ($goods->isEmpty()) {
             return $this->fail('商品不存在或已下架');
         }
+        // 分站可见性校验
+        $vipSite = $this->request->vipSite ?? null;
+        if ($vipSite) {
+            $gVip = (int) $goods->getAttr('vip_id');
+            if ($gVip !== 0 && $gVip !== (int) $vipSite->getAttr('id')) {
+                return $this->fail('商品不存在或已下架');
+            }
+        }
         $data = $goods->toArray();
+        // 分站售价
+        if ($vipSite) {
+            $data['base_price'] = (string) $data['real_price'];
+            $data['real_price'] = $vipSite->priceFor((string) $data['real_price']);
+        }
         // 实时库存（卡密商品以卡库余量为准）
         $stockNum = (int) $goods->getAttr('stock_num');
         if ((int) $goods->getAttr('goods_type') === 1) {

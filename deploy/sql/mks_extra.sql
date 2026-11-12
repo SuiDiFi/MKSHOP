@@ -104,6 +104,39 @@ WHERE r.`path` = 'order' AND r.`auth_type` = 1
   AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksDiyList' LIMIT 1) x)
 LIMIT 1;
 
+-- 4.7 M6 分站表（重写新增；原系统分站表在 vip 付费插件未随包，语义按订单/会员表 vip_id 引用反推）
+CREATE TABLE IF NOT EXISTS `mks_vip_site` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '分站ID（member.vip_id / goods.vip_id / order.vip_id 引用此ID）',
+  `uid` int NOT NULL DEFAULT 0 COMMENT '分站主会员ID → member.id',
+  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '分站名称',
+  `domain` varchar(255) NOT NULL DEFAULT '' COMMENT '绑定域名（空=未绑定，按 member.vip_id 关联）',
+  `rate` decimal(5,2) NOT NULL DEFAULT 0.00 COMMENT '分站加价率%（售价×(1+rate/100)=分站售价）',
+  `share_rate` decimal(5,2) NOT NULL DEFAULT 0.00 COMMENT '分站订单抽成率%（分站主佣金来源）',
+  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态 1=启用 0=停用',
+  `expire_time` int NOT NULL DEFAULT 0 COMMENT '到期时间（0=永久）',
+  `mark` varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
+  `create_time` int NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `update_time` int NOT NULL DEFAULT 0 COMMENT '更新时间',
+  `delete_time` int NOT NULL DEFAULT 0 COMMENT '软删除时间（0=未删除）',
+  PRIMARY KEY (`id`),
+  KEY `uid` (`uid`),
+  KEY `domain` (`domain`(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='分站（商户站点）';
+
+-- 4.8 M6 分站/供货接口权限点 + 菜单
+INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`auth_type`,`api_url`,`methods`,`delete_time`) VALUES
+  (0, '分站列表', 100, 'vip_index',       2, 'vip/index',       'GET',  0),
+  (0, '分站保存', 100, 'vip_save',        2, 'vip/save',        'POST', 0),
+  (0, '分站创建', 100, 'vip_create',      2, 'vip/create',      'POST', 0),
+  (0, '分站删除', 100, 'vip_delete',      2, 'vip/delete',      'POST', 0);
+
+INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
+SELECT r.parentId, '分站管理', 94, 'MksVipList', 'vip', 'shop', '@/views/vip/vipList', 1, '', '', 0
+FROM `mks_admin_router` r
+WHERE r.`path` = 'order' AND r.`auth_type` = 1
+  AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksVipList' LIMIT 1) x)
+LIMIT 1;
+
 -- 5. 字典种子：核心枚举（来源 config/kss.php，码值精确）
 -- REPLACE 自愈：若历史导入因客户端字符集错误产生乱码行，重导即按唯一键覆盖修复
 REPLACE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES

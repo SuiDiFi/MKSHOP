@@ -79,10 +79,26 @@ class OrderService
 
         $quantity2 = $quantity;
         $price = (string) $goods->getAttr('real_price');
+        // 分站上下文（M6）：分站售价 = 基础价 × (1+rate/100)；订单归属分站
+        $vipSite = $input['vip_site'] ?? null;
+        $vipFields = ['vip_id' => 0, 'vip_uid' => 0, 'vip_goods_price' => '0', 'vip_set_content' => null];
+        if ($vipSite instanceof \app\common\model\VipSite) {
+            $vipPrice = $vipSite->priceFor($price);
+            $vipFields = [
+                'vip_id'          => (int) $vipSite->getAttr('id'),
+                'vip_uid'         => (int) $vipSite->getAttr('uid'),
+                'vip_goods_price' => $vipPrice,
+                'vip_set_content' => json_encode([
+                    'rate' => (string) $vipSite->getAttr('rate'),
+                    'base_price' => $price,
+                ], JSON_UNESCAPED_UNICODE),
+            ];
+            $price = $vipPrice;
+        }
         $total = bcmul($price, (string) $quantity2, 4);
 
         $order = new Order();
-        $order->save([
+        $order->save(array_merge([
             'status'              => Order::ST_WAIT_PAY,
             'ordersn'             => self::buildOrderSn($input['user_where'] === 'h5' ? 'M' : 'D'),
             'uid'                 => $member ? (int) $member->getAttr('id') : 0,
@@ -110,7 +126,7 @@ class OrderService
             'create_time'         => time(),
             'ip'                  => (string) ($input['ip'] ?? ''),
             'buy_host'            => (string) ($input['buy_host'] ?? ''),
-        ]);
+        ], $vipFields));
         return $order;
     }
 
@@ -326,11 +342,29 @@ class OrderService
             throw $e;
         }
         self::log($order, '自动发货成功 ' . $qty . ' 张卡密');
-        // 分销佣金结算（幂等）
+        // 分销佣金 / 分站抽成 / 供货货款结算（幂等）
+        self::settleAfterSuccess(Order::findOrEmpty((int) $order->getAttr('id')));
+    }
+
+    /**
+     * 订单成功后的资金结算统一出口（佣金/分站抽成/供货货款；各服务自身幂等）
+     */
+    public static function settleAfterSuccess(Order $order): void
+    {
         try {
             CommissionService::settleIfSuccess((int) $order->getAttr('id'));
         } catch (\Throwable $e) {
             self::log($order, '佣金结算异常：' . $e->getMessage());
+        }
+        try {
+            VipSiteService::makeShare($order);
+        } catch (\Throwable $e) {
+            self::log($order, '分站抽成异常：' . $e->getMessage());
+        }
+        try {
+            SupplyService::settleIfSuccess($order);
+        } catch (\Throwable $e) {
+            self::log($order, '供货货款异常：' . $e->getMessage());
         }
     }
 
@@ -373,12 +407,8 @@ class OrderService
                 ->whereIn('status', [Order::ST_WAIT_DEAL, Order::ST_DEALING])
                 ->update(['status' => Order::ST_SUCCESS, 'finish_time' => time(), 'reader' => (string) $adminId, 'update_time' => time()]);
             self::log($order, '管理员手动处理成功');
-            // 分销佣金结算（幂等）
-            try {
-                CommissionService::settleIfSuccess((int) $order->getAttr('id'));
-            } catch (\Throwable $e) {
-                self::log($order, '佣金结算异常：' . $e->getMessage());
-            }
+            // 分销佣金 / 分站抽成 / 供货货款结算（幂等）
+            self::settleAfterSuccess(Order::findOrEmpty((int) $order->getAttr('id')));
             return;
         }
         if ($status === Order::ST_DEALING) {
@@ -477,6 +507,8 @@ class OrderService
         try {
             $backRate = bcdiv($money, (string) $order->getAttr('total_price'), 4);
             CommissionService::rollbackForRefund((int) $order->getAttr('id'), $backRate);
+            VipSiteService::rollbackShare((int) $order->getAttr('id'), $backRate);
+            SupplyService::rollbackForRefund((int) $order->getAttr('id'), $backRate);
         } catch (\Throwable $e) {
             self::log($order, '佣金回冲异常：' . $e->getMessage());
         }

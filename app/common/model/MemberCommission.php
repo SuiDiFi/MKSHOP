@@ -15,6 +15,8 @@ class MemberCommission extends BaseModel
     /** trade_type 枚举（MKSHOP 自研） */
     public const T_ORDER_COMMISSION = 1;    // 订单佣金入账
     public const T_COMMISSION_BACK  = 2;    // 订单退款佣金回冲
+    public const T_VIP_SHARE        = 3;    // 分站订单抽成（M6）
+    public const T_VIP_SHARE_BACK   = 4;    // 分站抽成回冲（M6）
     public const T_ADMIN_ADD        = 1001; // 后台加佣金
     public const T_ADMIN_SUB        = 1002; // 后台扣佣金
 

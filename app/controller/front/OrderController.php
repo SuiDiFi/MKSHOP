@@ -31,7 +31,7 @@ class OrderController extends BaseController
         if ($goods->isEmpty()) {
             return $this->fail('商品不存在或已下架');
         }
-        // 创建订单
+        // 创建订单（分站上下文：vipSite 由中间件按 Host 注入）
         try {
             $order = OrderService::createOrder($member, $goods, [
                 'quantity'         => (int) $this->request->param('quantity', 1),
@@ -40,6 +40,7 @@ class OrderController extends BaseController
                 'user_where'       => 'pc',
                 'ip'               => (string) $this->request->ip(),
                 'buy_host'         => (string) $this->request->host(),
+                'vip_site'         => $this->request->vipSite ?? null,
             ]);
             // 支付单
             $payType  = (string) $this->request->param('pay_type', 'balance');

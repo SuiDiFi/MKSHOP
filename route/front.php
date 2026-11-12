@@ -31,5 +31,11 @@ Route::group('front', function () {
         Route::get('commission/index', 'front.CommissionController/index'); // 概览
         Route::get('commission/teams', 'front.CommissionController/teams'); // 我的团队
         Route::get('commission/logs', 'front.CommissionController/logs');   // 佣金明细
-    })->middleware([\mks\middleware\MemberToken::class]);
-})->middleware([\mks\middleware\Cors::class]);
+    })->middleware([
+        \mks\middleware\MemberToken::class,
+        \mks\middleware\VipSiteToken::class, // 分站上下文（M6：Host → vipSite）
+    ]);
+})->middleware([
+    \mks\middleware\Cors::class,
+    \mks\middleware\VipSiteToken::class, // 公开组同样注入分站上下文（商品列表/详情调价）
+]);

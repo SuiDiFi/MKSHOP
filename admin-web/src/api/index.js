@@ -142,3 +142,9 @@ export const diyIndex = () => mksRequest('/admin/diy/index', 'GET');
 export const diyRead = (id) => mksRequest(`/admin/diy/read/${id}`, 'GET');
 export const diySave = (id, data) => mksRequest(`/admin/diy/save/${id}`, 'POST', {}, data);
 export const diyComponents = () => mksRequest('/admin/diy/components', 'GET');
+
+// ─── 分站管理（M6）───
+export const vipIndex = (params) => mksRequest('/admin/vip/index', 'GET', params);
+export const vipCreate = (form) => mksRequest('/admin/vip/create', 'POST', {}, { form });
+export const vipSave = (id, form) => mksRequest(`/admin/vip/save/${id}`, 'POST', {}, { form });
+export const vipDelete = (id) => mksRequest(`/admin/vip/delete/${id}`, 'POST');

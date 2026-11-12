@@ -278,11 +278,11 @@ class DockingV2Service
                 ->whereNotIn('status', [Order::ST_SUCCESS])
                 ->update(['status' => Order::ST_SUCCESS, 'finish_time' => time(), 'update_time' => time()]);
             $changed[] = '渠道成功→交易成功' . ($cards !== [] ? '（补卡 ' . count($cards) . ' 张）' : '');
-            // 分销佣金结算（幂等）
+            // 佣金/分站抽成/供货货款统一结算出口（幂等）
             try {
-                CommissionService::settleIfSuccess((int) $order->getAttr('id'));
+                OrderService::settleAfterSuccess(Order::findOrEmpty((int) $order->getAttr('id')));
             } catch (\Throwable $e) {
-                $changed[] = '佣金结算异常：' . $e->getMessage();
+                $changed[] = '结算异常：' . $e->getMessage();
             }
         } elseif ($remoteStatus === 3 && $local === Order::ST_SUCCESS && $cards !== []) {
             // 已成功订单收到补卡回调（上游部分发货后补齐）；saveDockingCards 内部按差额补卡且 md5 去重，天然幂等

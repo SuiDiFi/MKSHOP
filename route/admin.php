@@ -161,6 +161,13 @@ Route::group('admin', function () {
         Route::get('diy/read/:id', 'admin.DiyController/read');
         Route::post('diy/save/:id', 'admin.DiyController/save');
         Route::get('diy/components', 'admin.DiyController/components');
+
+        // ── M6 分站模块 ──────────────────────────────────────
+        // 分站管理（权限点 vip/*）
+        Route::get('vip/index', 'admin.VipSiteController/index');
+        Route::post('vip/create', 'admin.VipSiteController/create');
+        Route::post('vip/save/:id', 'admin.VipSiteController/save');
+        Route::post('vip/delete/:id', 'admin.VipSiteController/delete');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,
