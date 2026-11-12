@@ -11,6 +11,7 @@
           <el-select v-model="query.type" placeholder="全部来源" clearable style="width: 120px" @change="doSearch">
             <el-option label="余额" :value="1" />
             <el-option label="佣金" :value="2" />
+            <el-option label="商户货款" :value="3" />
           </el-select>
           <el-input v-model="query.keyword" placeholder="会员/姓名/账号" clearable style="width: 180px" @keyup.enter="doSearch" />
           <el-button type="primary" @click="doSearch">查询</el-button>
@@ -27,7 +28,7 @@
         </el-table-column>
         <el-table-column label="来源" width="80">
           <template #default="{ row }">
-            <el-tag :type="Number(row.type) === 2 ? 'warning' : 'info'" size="small">{{ row.type_text }}</el-tag>
+            <el-tag :type="Number(row.type) === 2 ? 'warning' : (Number(row.type) === 3 ? 'success' : 'info')" size="small">{{ row.type_text }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="提现金额" width="110">

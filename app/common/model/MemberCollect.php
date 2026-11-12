@@ -18,6 +18,7 @@ class MemberCollect extends BaseModel
     /** 提现来源 */
     public const T_BALANCE    = 1; // 余额
     public const T_COMMISSION = 2; // 佣金
+    public const T_SUPPLY     = 3; // 商户货款
 
     /**
      * 状态文案（后台/前台共用）
@@ -32,6 +33,6 @@ class MemberCollect extends BaseModel
      */
     public static function typeText(int $type): string
     {
-        return [self::T_BALANCE => '余额', self::T_COMMISSION => '佣金'][$type] ?? '未知';
+        return [self::T_BALANCE => '余额', self::T_COMMISSION => '佣金', self::T_SUPPLY => '商户货款'][$type] ?? '未知';
     }
 }

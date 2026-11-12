@@ -58,3 +58,16 @@ export const vipCommissionLogs = (params) => mksRequest('/vip/commission_logs', 
 export const vipConfigRead = () => mksRequest('/vip/config_read', 'GET');
 export const vipConfigSave = (data) => mksRequest('/vip/config_save', 'POST', {}, data);
 export const vipDomainIndex = () => mksRequest('/vip/domain_index', 'GET');
+
+// ─── 商户（M6-B）───
+export const merchantApplyInfo = () => mksRequest('/merchant/apply_info', 'GET');
+export const merchantApplySubmit = (data) => mksRequest('/merchant/apply_submit', 'POST', {}, data);
+export const merchantOverview = () => mksRequest('/merchant/overview', 'GET');
+export const merchantOrderIndex = (params) => mksRequest('/merchant/order_index', 'GET', params);
+export const merchantOrderRead = (id) => mksRequest(`/merchant/order_read/${id}`, 'GET');
+export const merchantGoodsIndex = (params) => mksRequest('/merchant/goods_index', 'GET', params);
+export const merchantWallet = () => mksRequest('/merchant/wallet', 'GET');
+export const merchantSupplyFlow = (params) => mksRequest('/merchant/supply_flow', 'GET', params);
+export const merchantWithdrawConfig = () => mksRequest('/merchant/withdraw_config', 'GET');
+export const merchantWithdrawApply = (data) => mksRequest('/merchant/withdraw_apply', 'POST', {}, data);
+export const merchantWithdrawIndex = (params) => mksRequest('/merchant/withdraw_index', 'GET', params);

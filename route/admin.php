@@ -210,6 +210,21 @@ Route::group('admin', function () {
         Route::get('vip/domain_index', 'admin.VipSiteController/domain_index');
         Route::post('vip/domain_save', 'admin.VipSiteController/domain_save');
         Route::post('vip/domain_delete', 'admin.VipSiteController/domain_delete');
+
+        // ── M6 商户模块 ──────────────────────────────────────
+        // 商户管理（权限点 merchant/*）
+        Route::get('merchant/index', 'admin.MerchantController/index');
+        Route::get('merchant/read/:id', 'admin.MerchantController/read');
+        Route::post('merchant/create', 'admin.MerchantController/create');
+        Route::post('merchant/save/:id', 'admin.MerchantController/save');
+        Route::post('merchant/status', 'admin.MerchantController/status');
+        Route::get('merchant/member_options', 'admin.MerchantController/member_options');
+        Route::get('merchant/supply_flow', 'admin.MerchantController/supply_flow');
+        Route::get('merchant/settlement_index', 'admin.MerchantController/settlement_index');
+        // 入驻审核（权限点 merchant_apply/*）
+        Route::get('merchant_apply/index', 'admin.MerchantApplyController/index');
+        Route::get('merchant_apply/read/:id', 'admin.MerchantApplyController/read');
+        Route::post('merchant_apply/audit/:id', 'admin.MerchantApplyController/audit');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,

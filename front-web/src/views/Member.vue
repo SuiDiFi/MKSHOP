@@ -84,6 +84,12 @@ const quicks = computed(() => {
   if (Number(user.value.has_vip) === 1) {
     base.unshift({ name: '分站管理', path: '/vip', icon: Shop, color: '#f56c6c' });
   }
+  base.unshift({
+    name: Number(user.value.has_merchant) === 1 ? '商户中心' : '商家入驻',
+    path: '/merchant',
+    icon: Shop,
+    color: '#e6a23c',
+  });
   return base;
 });
 

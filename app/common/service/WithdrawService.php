@@ -15,6 +15,7 @@ use app\common\model\MemberCollect;
 use app\common\model\MemberCollectWay;
 use app\common\model\MemberCommission;
 use app\common\model\MemberMoney;
+use app\common\model\MemberSupply;
 use mks\util\SysConfig;
 use think\facade\Db;
 
@@ -69,7 +70,7 @@ class WithdrawService
      */
     public static function apply(int $uid, int $type, string $money, int $wayId, array $account = [], string $mark = ''): MemberCollect
     {
-        if (!in_array($type, [MemberCollect::T_BALANCE, MemberCollect::T_COMMISSION], true)) {
+        if (!in_array($type, [MemberCollect::T_BALANCE, MemberCollect::T_COMMISSION, MemberCollect::T_SUPPLY], true)) {
             throw_fail('提现类型错误', 1);
         }
         $money = bcadd($money, '0', 4);
@@ -96,8 +97,7 @@ class WithdrawService
         if (bccomp($fee, $money, 4) >= 0) {
             throw_fail('提现金额不足以支付手续费', 1);
         }
-        $availField = $type === MemberCollect::T_COMMISSION ? 'commission_money' : 'balance';
-        $freezField = $type === MemberCollect::T_COMMISSION ? 'freez_commission_money' : 'freez_money';
+        [$availField, $freezField, $lackTip] = self::fieldsFor($type);
 
         Db::startTrans();
         try {
@@ -107,7 +107,7 @@ class WithdrawService
             }
             $before = (string) $member->getAttr($availField);
             if (bccomp($before, $money, 4) < 0) {
-                throw_fail($type === MemberCollect::T_COMMISSION ? '可提现佣金不足' : '账户余额不足', 1);
+                throw_fail($lackTip, 1);
             }
             $after = bcsub($before, $money, 4);
             $member->force()->save([
@@ -116,7 +116,7 @@ class WithdrawService
             ]);
             $collect = MemberCollect::create([
                 'host'        => (string) request()->host(),
-                'uid_type'    => 1,
+                'uid_type'    => $type === MemberCollect::T_SUPPLY ? 2 : 1,
                 'collect_type' => (int) ($account['collect_type'] ?? 1),
                 'apply_uid'   => $uid,
                 'apply_uname' => (string) $member->getAttr('username'),
@@ -144,6 +144,20 @@ class WithdrawService
                     'create_time' => time(),
                     'extend_id'   => 'COLLECT:' . (int) $collect->getAttr('id'),
                     'mark'        => '佣金提现申请（' . MemberCollect::typeText($type) . '）',
+                    'order_id'    => 0,
+                ]);
+            } elseif ($type === MemberCollect::T_SUPPLY) {
+                MemberSupply::create([
+                    'uid'         => $uid,
+                    'money'       => $money,
+                    'trade_type'  => MemberSupply::T_WITHDRAW_APPLY,
+                    'change_type' => MemberSupply::C_PAY,
+                    'before'      => $before,
+                    'after'       => $after,
+                    'create_time' => time(),
+                    'extend_id'   => 'COLLECT:' . (int) $collect->getAttr('id'),
+                    'mark'        => '货款提现申请',
+                    'merchant_id' => (int) $member->getAttr('merchant_id'),
                     'order_id'    => 0,
                 ]);
             } else {
@@ -199,8 +213,7 @@ class WithdrawService
             if ($member->isEmpty()) {
                 throw_fail('会员不存在', 1);
             }
-            $availField = $type === MemberCollect::T_COMMISSION ? 'commission_money' : 'balance';
-            $freezField = $type === MemberCollect::T_COMMISSION ? 'freez_commission_money' : 'freez_money';
+            [$availField, $freezField] = self::fieldsFor($type);
             $freez = (string) $member->getAttr($freezField);
             $used  = bccomp($freez, $money, 4) >= 0 ? $money : $freez; // 冻结额异常时按可用冻结封顶
             $update = [$freezField => bcsub($freez, $used, 4)];
@@ -225,6 +238,20 @@ class WithdrawService
                         'create_time' => time(),
                         'extend_id'   => 'COLLECT:REFUND:' . $id,
                         'mark'        => '佣金提现驳回退回',
+                        'order_id'    => 0,
+                    ]);
+                } elseif ($type === MemberCollect::T_SUPPLY) {
+                    MemberSupply::create([
+                        'uid'         => $uid,
+                        'money'       => $used,
+                        'trade_type'  => MemberSupply::T_WITHDRAW_REFUND,
+                        'change_type' => MemberSupply::C_INCOME,
+                        'before'      => $before,
+                        'after'       => $after,
+                        'create_time' => time(),
+                        'extend_id'   => 'COLLECT:REFUND:' . $id,
+                        'mark'        => '货款提现驳回退回',
+                        'merchant_id' => (int) $member->getAttr('merchant_id'),
                         'order_id'    => 0,
                     ]);
                 } else {
@@ -258,5 +285,19 @@ class WithdrawService
             Db::rollback();
             throw $e;
         }
+    }
+
+    /**
+     * 提现来源 → [可用字段, 冻结字段, 余额不足提示]
+     */
+    protected static function fieldsFor(int $type): array
+    {
+        if ($type === MemberCollect::T_COMMISSION) {
+            return ['commission_money', 'freez_commission_money', '可提现佣金不足'];
+        }
+        if ($type === MemberCollect::T_SUPPLY) {
+            return ['supply_money', 'freez_supply_money', '可提现货款不足'];
+        }
+        return ['balance', 'freez_money', '账户余额不足'];
     }
 }

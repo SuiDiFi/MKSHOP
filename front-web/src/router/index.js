@@ -22,6 +22,7 @@ const routes = [
   { path: '/order/:sn', name: 'OrderDetail', component: () => import('@/views/OrderDetail.vue'), meta: { title: '订单详情', auth: true } },
   { path: '/commission', name: 'Commission', component: () => import('@/views/Commission.vue'), meta: { title: '分销中心', auth: true } },
   { path: '/vip', name: 'Vip', component: () => import('@/views/Vip.vue'), meta: { title: '分站管理', auth: true } },
+  { path: '/merchant', name: 'Merchant', component: () => import('@/views/Merchant.vue'), meta: { title: '商户中心', auth: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 

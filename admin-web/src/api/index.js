@@ -189,3 +189,16 @@ export const vipConfigSave = (data) => mksRequest('/admin/vip/config_save', 'POS
 export const vipDomainIndex = (params) => mksRequest('/admin/vip/domain_index', 'GET', params);
 export const vipDomainSave = (data) => mksRequest('/admin/vip/domain_save', 'POST', {}, data);
 export const vipDomainDelete = (data) => mksRequest('/admin/vip/domain_delete', 'POST', {}, data);
+
+// ─── 商户（M6-B）───
+export const merchantIndex = (params) => mksRequest('/admin/merchant/index', 'GET', params);
+export const merchantRead = (id) => mksRequest(`/admin/merchant/read/${id}`, 'GET');
+export const merchantCreate = (data) => mksRequest('/admin/merchant/create', 'POST', {}, data);
+export const merchantSave = (id, data) => mksRequest(`/admin/merchant/save/${id}`, 'POST', {}, data);
+export const merchantStatus = (data) => mksRequest('/admin/merchant/status', 'POST', {}, data);
+export const merchantMemberOptions = (params) => mksRequest('/admin/merchant/member_options', 'GET', params);
+export const merchantSupplyFlow = (params) => mksRequest('/admin/merchant/supply_flow', 'GET', params);
+export const merchantSettlementIndex = (params) => mksRequest('/admin/merchant/settlement_index', 'GET', params);
+export const merchantApplyIndex = (params) => mksRequest('/admin/merchant_apply/index', 'GET', params);
+export const merchantApplyRead = (id) => mksRequest(`/admin/merchant_apply/read/${id}`, 'GET');
+export const merchantApplyAudit = (id, data) => mksRequest(`/admin/merchant_apply/audit/${id}`, 'POST', {}, data);
