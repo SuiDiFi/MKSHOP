@@ -11,6 +11,12 @@ function goLogin() {
  */
 function request(path, method = 'GET', params = {}, data = undefined) {
   return new Promise((resolve, reject) => {
+    if (!baseUrl) {
+      // 未注入服务器域名（scripts/inject-config.js），给出明确提示而不是发到错误地址
+      wx.showToast({ title: '未配置服务器域名', icon: 'none' });
+      reject(new Error('未配置服务器域名'));
+      return;
+    }
     const token = wx.getStorageSync('mks_member_token');
     wx.request({
       url: `${baseUrl}/index.php?s=${encodeURIComponent(path)}`,

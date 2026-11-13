@@ -2,3 +2,8 @@
 .logo { font-size: 90rpx; }
 .name { font-size: 36rpx; font-weight: 800; margin: 12rpx 0 8rpx; }
 .tip { padding: 32rpx 12rpx; text-align: center; line-height: 1.7; }
+.warn { color: #e6a23c; }
+.divider { margin: 40rpx 0 24rpx; text-align: center; font-size: 24rpx; color: #c0c4cc; }
+.wechat { background: #07c160; }
+.links { padding: 0 12rpx 40rpx; text-align: center; font-size: 24rpx; color: #1d6fe8; }
+.links text { margin: 0 12rpx; }

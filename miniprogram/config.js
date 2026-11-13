@@ -1,6 +1,18 @@
 // 小程序全局配置
-// 注意：微信正式环境要求 HTTPS 且域名需在小程序后台配置；当前为服务器 IP + HTTP，
-// 仅可在开发者工具「不校验合法域名」下调试，或自行替换为已备案 HTTPS 域名。
+// 规则：AppID 与服务器域名由 scripts/inject-config.js 在构建前注入 config.build.js；
+//       页面代码不得硬编码 AppID / 域名 / 商户号等环境值。
+// 调试兜底：开发者可临时 wx.setStorageSync('mks_mp_base_url', 'https://xxx') 覆盖请求域名。
+const build = require('./config.build');
+
+function runtimeBaseUrl() {
+  try {
+    return String(wx.getStorageSync('mks_mp_base_url') || '');
+  } catch (e) {
+    return '';
+  }
+}
+
 module.exports = {
-  baseUrl: 'http://154.222.25.115:8080',
+  appid: build.appid || '',
+  baseUrl: (runtimeBaseUrl() || build.baseUrl || '').replace(/\/+$/, ''),
 };

@@ -18,6 +18,11 @@ const orderPay = (data) => request('/front/order/pay', 'POST', {}, data);
 const orderIndex = (params) => request('/front/order/index', 'GET', params);
 const orderQuery = (ordersn) => request('/front/order/query', 'GET', { ordersn });
 
+// 小程序配置与微信能力预留（M6-E；微信登录/支付默认关闭）
+const mpConfig = () => request('/mp/config');
+const mpWechatLogin = (data) => request('/mp/login/wechat', 'POST', {}, data);
+const mpWechatPay = (data) => request('/mp/pay/wechat', 'POST', {}, data);
+
 // 客服
 const kefuStart = (source = 'mp') => request('/front/kefu/start', 'POST', {}, { source });
 const kefuMessages = (params) => request('/front/kefu/messages', 'GET', params);
@@ -27,5 +32,6 @@ module.exports = {
   homeIndex, categoryIndex, goodsIndex, goodsRead,
   memberLogin, memberInfo, memberLogout,
   orderBuy, orderPay, orderIndex, orderQuery,
+  mpConfig, mpWechatLogin, mpWechatPay,
   kefuStart, kefuMessages, kefuSend,
 };

@@ -1,6 +1,6 @@
 <view class="login-head">
   <view class="logo">🛒</view>
-  <view class="name">MKSHOP 商城</view>
+  <view class="name">{{ siteName }}</view>
   <view class="muted">登录后即可下单、查看订单与卡密</view>
 </view>
 
@@ -15,9 +15,22 @@
       <input class="input" password placeholder="请输入密码" value="{{password}}" data-field="password" bindinput="onInput" />
     </view>
     <view class="btn block" style="margin-top:40rpx" bindtap="submit">{{ loading ? '登录中…' : '登录' }}</view>
+
+    <block wx:if="{{ wechatEnabled }}">
+      <view class="divider">或</view>
+      <view class="btn block wechat" bindtap="onWechatLogin">微信一键登录</view>
+    </block>
   </view>
 
-  <view class="tip muted">
-    小程序 MVP 暂未接入微信授权登录，使用商城账号密码登录；支付走余额支付。
+  <view class="tip muted" wx:if="{{ !releaseEnable }}">
+    <text class="warn">小程序暂未上架：</text>当前仅用于内部调试，正式开放请等待运营通知。
+  </view>
+  <view class="tip muted" wx:else>
+    支付默认走账户余额；微信支付与微信授权登录由后台开关控制，未开启时不影响账号密码登录。
+  </view>
+
+  <view class="links" wx:if="{{ agreementUrl || privacyUrl }}">
+    <text wx:if="{{ agreementUrl }}" data-url="{{ agreementUrl }}" bindtap="copyLink">《用户协议》</text>
+    <text wx:if="{{ privacyUrl }}" data-url="{{ privacyUrl }}" bindtap="copyLink">《隐私政策》</text>
   </view>
 </view>
