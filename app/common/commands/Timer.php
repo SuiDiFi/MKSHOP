@@ -64,6 +64,13 @@ class Timer extends Command
                 $r = \app\common\service\SupplyService::settleDue(200);
                 return sprintf('scanned=%d,settled=%d,failed=%d', $r['scanned'], $r['settled'], $r['failed']);
             },
+            // 财务日结对账（M7：昨日客户+渠道对账单）
+            'money_day' => function () {
+                $date = date('Y-m-d', strtotime('-1 day'));
+                $member = \app\common\service\MoneyDayService::generate($date);
+                $channel = \app\common\service\MoneyDayService::generateChannel($date);
+                return sprintf('date=%s,member=%d,channel=%d', $date, $member, $channel);
+            },
         ];
 
         $now = time();

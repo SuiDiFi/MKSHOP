@@ -156,6 +156,12 @@ Route::group('admin', function () {
         Route::post('complain/dual/:id', 'admin.ComplainController/dual');
         Route::get('complain/export', 'admin.ComplainController/export');
         Route::get('complain/type_list', 'admin.ComplainController/type_list');
+        // 财务对账（M7 对齐 KASUSHOU moneyday / 渠道对账）
+        Route::get('money_day/index', 'admin.MoneyDayController/index');
+        Route::post('money_day/update', 'admin.MoneyDayController/update');
+        Route::get('money_day/channel_index', 'admin.MoneyDayController/channel_index');
+        Route::post('money_day/channel_update', 'admin.MoneyDayController/channel_update');
+        Route::get('money_day/export', 'admin.MoneyDayController/export');
 
         // 对接渠道（权限点 docking/*；M3 上游 v2api）
         Route::get('docking/index', 'admin.DockingController/index');

@@ -156,6 +156,13 @@ export const complainDual = (id, data) => mksRequest(`/admin/complain/dual/${id}
 export const complainTypeList = () => mksRequest('/admin/complain/type_list', 'GET');
 export const complainExport = exportCsv;
 
+// ─── 财务对账（M7 对齐 KASUSHOU moneyday / 渠道对账）───
+export const moneyDayIndex = (params) => mksRequest('/admin/money_day/index', 'GET', params);
+export const moneyDayUpdate = (data) => mksRequest('/admin/money_day/update', 'POST', {}, data);
+export const moneyDayExport = exportCsv;
+export const dockingDayIndex = (params) => mksRequest('/admin/money_day/channel_index', 'GET', params);
+export const dockingDayUpdate = (data) => mksRequest('/admin/money_day/channel_update', 'POST', {}, data);
+
 // ─── 订单管理（M2）───
 export const orderIndex = (params) => mksRequest('/admin/order/index', 'GET', params);
 export const orderInfo = (id) => mksRequest(`/admin/order/info/${id}`);
