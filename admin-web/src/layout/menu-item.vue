@@ -1,30 +1,35 @@
 <template>
-  <el-sub-menu v-if="node.children && node.children.length > 0" :index="`M${node.id}`">
+  <!-- 有子节点：子菜单（图标用 remixicon 名，DB icon 字段原样存 ri-* 名称） -->
+  <el-sub-menu v-if="children.length" :index="`M${node.id}`">
     <template #title>
-      <el-icon v-if="iconOf(node)"><component :is="iconOf(node)" /></el-icon>
+      <mks-icon v-if="node.icon" :name="node.icon" :size="16" class="mi" />
       <span>{{ node.title || node.name }}</span>
     </template>
-    <menu-item v-for="child in node.children.filter(c => !c.hidden && c.path)" :key="child.id" :node="child" />
+    <menu-item v-for="child in children" :key="child.id" :node="child" />
   </el-sub-menu>
-  <el-menu-item v-else :index="routeIndexOf(node)">
-    <el-icon v-if="iconOf(node)"><component :is="iconOf(node)" /></el-icon>
+
+  <!-- 叶子：菜单项，index 用动态路由登记的绝对路径，配合 el-menu router 直接跳转 -->
+  <el-menu-item v-else :index="path">
+    <mks-icon v-if="node.icon" :name="node.icon" :size="16" class="mi" />
     <template #title>{{ node.title || node.name }}</template>
   </el-menu-item>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useUserStore } from '@/store/user';
+import mksIcon from '@/components/mksIcon.vue';
 
 const props = defineProps({ node: { type: Object, required: true } });
 const user = useUserStore();
 
-function iconOf(node) {
-  const name = (node.icon || '').replace(/-line$|-fill$|-bold$/, '');
-  return name || null;
-}
-
-// 菜单路由 index：注册动态路由时记录的完整路径
-function routeIndexOf(node) {
-  return user.menuPathMap[node.id] || node.path || null;
-}
+const children = computed(() => (props.node.children || []).filter((c) => !Number(c.hidden) && c.path));
+const path = computed(() => user.menuPathMap[props.node.id] || props.node.path);
 </script>
+
+<style scoped>
+.mi {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+</style>

@@ -1,22 +1,319 @@
-/* MKSHOP 管理后台全局样式 */
+/* =====================================================================
+ * MKSHOP 后台全局样式（对齐 KASUSHOU 后台页面规范）
+ * 兼容说明：既有 20+ 页面使用 .page-card / .toolbar / .pager，
+ *          这里保留类名并重写视觉，避免一次性大改页面模板
+ * ===================================================================== */
+
+@import './tokens.css';
+
+/* ── 基础 ───────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
 body {
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
-  background-color: #f5f7fa;
+  font-family: var(--mks-font-family);
+  font-size: var(--mks-font-size);
+  color: var(--mks-text);
+  background-color: var(--mks-bg);
+  -webkit-font-smoothing: antialiased;
 }
 
+a {
+  color: var(--mks-primary);
+  text-decoration: none;
+}
+
+/* ── 全站自定义滚动条（对方 8×8px + 半透明 thumb）────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(40, 44, 52, 0.1);
+  border: 3px solid transparent;
+  border-radius: 7px;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(40, 44, 52, 0.2);
+  background-clip: content-box;
+}
+
+/* ── 页面容器 ───────────────────────────────────────── */
+.mks-app-main {
+  box-sizing: border-box;
+  padding: var(--mks-main-pad);
+  background: var(--mks-bg);
+}
+
+/* 旧类名兼容：页面根节点 */
 .page-card {
-  margin: 12px;
+  margin: 0;
 }
 
-.toolbar {
+/* 面板：白底 + 8px 圆角 + 极浅阴影（对方 .dash-panel 规范） */
+.mks-panel,
+.page-card > .el-card {
+  border-radius: var(--mks-radius-panel);
+  box-shadow: var(--mks-shadow-panel) !important;
+  border: 1px solid var(--mks-border-light);
+  margin-bottom: 12px;
+}
+.mks-panel:last-child,
+.page-card > .el-card:last-child {
+  margin-bottom: 0;
+}
+.el-card__header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mks-border-light);
+  font-weight: 700;
+  color: var(--mks-text);
+}
+.el-card__body {
+  padding: 16px;
+}
+
+/* ── 标签栏高度（对方 50px）───────────────────────── */
+.tabs-bar {
+  min-height: var(--mks-tabs-h);
+}
+.el-tabs__header {
+  margin-bottom: 0;
+}
+
+/* ── 查询区（默认 5 项，展开/合并）───────────────────── */
+.mks-query-form {
+  padding: 16px 16px 4px;
+  margin-bottom: 12px;
+  background: var(--mks-bg-white);
+  border: 1px solid var(--mks-border-light);
+  border-radius: var(--mks-radius-panel);
+}
+.mks-query-form .el-form-item {
+  margin-right: 12px;
+  margin-bottom: 12px;
+}
+.mks-query-form .el-form-item__label {
+  font-size: var(--mks-font-size);
+  color: var(--mks-text-secondary);
+}
+.mks-fold-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mks-font-size);
+  color: var(--mks-primary);
+  cursor: pointer;
+  user-select: none;
+}
+.mks-fold-btn i {
+  transition: transform 0.3s;
+}
+.mks-fold-btn.is-open i {
+  transform: rotate(180deg);
+}
+
+/* ── 工具栏：统一左上 ───────────────────────────────── */
+.toolbar,
+.mks-toolbar {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-  flex-wrap: wrap;
+}
+.toolbar .el-button + .el-button,
+.mks-toolbar .el-button + .el-button {
+  margin-left: 0;
 }
 
-.pager {
-  margin-top: 12px;
+/* ── 状态页签 + 胶囊按钮排（对方 order-status-bar）───── */
+.mks-status-bar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  margin-bottom: 12px;
+  background: var(--mks-bg-white);
+  border-radius: var(--mks-radius-panel);
+}
+.mks-pill {
+  height: 32px;
+  padding: 0 14px;
+  font-size: var(--mks-font-size);
+  color: var(--mks-text-secondary);
+  background: var(--mks-bg-white);
+  border: 1px solid var(--mks-border);
+  border-radius: var(--mks-radius-pill);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.mks-pill:hover {
+  color: var(--mks-primary);
+  border-color: var(--el-color-primary-light-7);
+}
+.mks-pill.is-active {
+  color: #fff;
+  background: var(--mks-primary);
+  border-color: var(--mks-primary);
+}
+
+/* ── 表格规范（纵向节奏对齐对方：表头 51px、数据行 ≈64px）─── */
+.el-table {
+  font-size: var(--mks-font-size-table);
+  color: var(--mks-text-regular);
+}
+.el-table th.el-table__cell {
+  height: 51px;
+  padding: 12px 0;
+  background-color: var(--mks-bg-header) !important;
+  color: var(--mks-text-header);
+  font-weight: 700;
+}
+.el-table td.el-table__cell {
+  padding: 14px 0;
+}
+.el-table .cell {
+  padding: 0 10px;
+  line-height: 22px;
+}
+.el-table__row .el-button--text {
+  padding: 2px 4px;
+  font-size: var(--mks-font-size-table);
+}
+/* 表格内快捷数字/ID：渲染为主色文字按钮（对方规范） */
+.mks-cell-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
+.mks-cell-link:hover {
+  text-decoration: underline;
+}
+
+/* ── 分页：表格下方，带背景 ─────────────────────────── */
+.pager,
+.mks-pager {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+.el-pagination {
+  --el-pagination-button-height: 28px;
+  font-size: var(--mks-font-size-input);
+}
+
+/* ── 空状态（对方用插画而非"暂无数据"文字）──────────── */
+.mks-data-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: var(--mks-text-placeholder);
+  font-size: var(--mks-font-size);
+}
+.mks-data-empty .mks-empty-icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+  color: var(--mks-border);
+}
+
+/* ── 页面切换动画（对方 fade-transform，仅淡入）──────── */
+.fade-transform-enter-active,
+.fade-transform-leave-active {
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+.fade-transform-enter-from {
+  opacity: 0;
+}
+.fade-transform-leave-to {
+  opacity: 0;
+}
+
+/* ── 顶部进度条（自实现，不引 nprogress）─────────────── */
+#mks-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--mks-z-progress);
+  width: 0;
+  height: 2px;
+  background: var(--mks-primary);
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.3s ease;
+  pointer-events: none;
+}
+#mks-progress.is-active {
+  opacity: 1;
+}
+
+/* ── 通用小部件 ─────────────────────────────────────── */
+.mks-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mks-text-placeholder);
+}
+.mks-dot.is-success {
+  background: var(--mks-success);
+}
+.mks-dot.is-error {
+  background: var(--mks-danger);
+}
+
+/* 提示文字统一 */
+.mks-tip {
+  font-size: var(--mks-font-size-table);
+  color: var(--mks-text-placeholder);
+}
+
+/* dialog 头部（对方：下边框 1px #e4e7ed，标题 18px #626b7d）*/
+.el-dialog {
+  border-radius: var(--mks-radius-panel);
+}
+.el-dialog__header {
+  padding: 20px 20px 10px;
+  border-bottom: 1px solid var(--mks-border-dark);
+  margin-right: 0;
+}
+.el-dialog__title {
+  font-size: 16px;
+  color: var(--mks-text-secondary);
+}
+.el-dialog__body {
+  padding: 20px;
+  color: var(--mks-text-regular);
+}
+.el-dialog__footer {
+  padding: 10px 20px 20px;
+}
+
+/* 输入/按钮尺寸对齐（对方 input 40px、small 按钮 32px、圆角 2.5px）*/
+.el-input__wrapper,
+.el-textarea__inner {
+  border-radius: var(--mks-radius);
+}
+.el-button {
+  border-radius: var(--mks-radius);
+  font-weight: 400;
+}
+
+/* 小屏：隐藏次要元素（对方 hidden-xs-only）*/
+@media (max-width: 768px) {
+  .mks-hide-sm {
+    display: none !important;
+  }
 }

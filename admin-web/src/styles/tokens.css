@@ -1,0 +1,169 @@
+/* =====================================================================
+ * MKSHOP 后台视觉 token（对齐 KASUSHOU 线上后台取证结果）
+ * 证据来源：public/template/admin/static/css/*.css 命中数 + 浏览器实测 computed style
+ * 详见 docs/UI-后台对齐KASUSHOU.md §1.2
+ *
+ * 约定：
+ *   1) 所有页面/组件只允许引用变量，不允许硬编码色值（改主题即全站生效）
+ *   2) Element Plus 变量在本文件统一覆盖，主色由 #409eff 换为对方主色 #1890ff
+ *   3) light-N / dark-2 用 color-mix 计算，与 EP SCSS 混合公式等价
+ *      （已验证：#1890ff 的 light-9 = #e8f4ff、#13ce66 的 light-9 = #e7faf0、
+ *        #ff4d4f 的 light-5 = #ffa6a7、#ffba00 的 light-9 = #fff8e6，均与实测一致）
+ * ===================================================================== */
+
+:root,
+.mks-theme-ocean {
+  /* ── 品牌与语义色 ── */
+  --mks-primary: #1890ff;
+  --mks-primary-grad: linear-gradient(90deg, #006cff, #399efd);
+  --mks-success: #13ce66;
+  --mks-warning: #ffba00;
+  --mks-danger: #ff4d4f;
+  --mks-info: #626b7d;
+
+  /* ── 文本 ── */
+  --mks-text-title: #333333;    /* 标题/登录标题 */
+  --mks-text: #515a6e;          /* 主文本（vab 体系） */
+  --mks-text-regular: #606266;  /* Element 常规文本 */
+  --mks-text-secondary: #626b7d;/* 次文本/未选中态 */
+  --mks-text-placeholder: #c0c4cc;
+  --mks-text-header: rgba(0, 0, 0, 0.65); /* 表头 */
+  --mks-text-footer: rgba(0, 0, 0, 0.45); /* 页脚 */
+
+  /* ── 背景 ── */
+  --mks-bg: #f6f8f9;            /* 页面底 */
+  --mks-bg-white: #ffffff;
+  --mks-bg-header: #f5f7fa;     /* 表头底 */
+  --mks-bg-header-2: #f7f8fa;   /* 订单表头底 */
+  --mks-bg-hover: #f5f7fa;
+  --mks-bg-side: #ffffff;       /* 侧栏底（分栏/白系主题） */
+  --mks-bg-side-deep: #282c34;  /* 深色侧栏底（黑系主题） */
+  --mks-bg-logo: #17222e;
+
+  /* ── 边框 ── */
+  --mks-border: #dcdfe6;        /* 输入/表格 */
+  --mks-border-light: #ebeef5;  /* 卡片/分割 */
+  --mks-border-dark: #e4e7ed;   /* dialog 头部 */
+  --mks-border-card: #e8edf3;   /* 模板卡片 */
+
+  /* ── 圆角 ── */
+  --mks-radius: 2.5px;          /* 组件 */
+  --mks-radius-panel: 8px;      /* 面板 */
+  --mks-radius-card: 10px;      /* 卡片 */
+  --mks-radius-pill: 16px;      /* 胶囊按钮 */
+
+  /* ── 尺寸（与对方逐像素对齐）── */
+  --mks-nav-h: 60px;            /* 第一行导航 */
+  --mks-tabs-h: 50px;           /* 第二行标签页 */
+  --mks-header-h: 110px;        /* 固定头部合计 */
+  --mks-footer-h: 55px;
+  --mks-column-w: 266px;        /* 分栏左栏总宽 */
+  --mks-column-icon-w: 64px;    /* 一级渠道图标列 */
+  --mks-column-menu-w: 202px;   /* 二级菜单列 */
+  --mks-side-w: 266px;          /* 纵向布局侧栏 */
+  --mks-side-collapse-w: 64px;
+  --mks-menu-item-h: 50px;
+  --mks-main-pad: 20px;
+  --mks-cell-pad: 0 10px;
+
+  /* ── 字体 ── */
+  --mks-font-family: 'PingFang SC', Arial, 'Microsoft YaHei', sans-serif;
+  --mks-font-size: 14px;
+  --mks-font-size-input: 13px;
+  --mks-font-size-table: 12px;
+  --mks-font-size-title: 22px;
+
+  /* ── 阴影 ── */
+  --mks-shadow-panel: 0 1px 1px rgba(0, 0, 0, 0.016);
+  --mks-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.035);
+  --mks-shadow-side: 0 1px 4px rgba(0, 21, 41, 0.08);
+  --mks-shadow-login: 0 6px 40px rgba(0, 0, 0, 0.08);
+
+  /* ── 层级 ── */
+  --mks-z-header: 1998;
+  --mks-z-side: 2000;
+  --mks-z-progress: 2002;
+  --mks-z-float: 9999;
+
+  /* ── 侧栏配色模式（white / deep）── */
+  --mks-side-mode: white;
+  --mks-side-text: #626b7d;
+  --mks-side-text-active: var(--mks-primary);
+  --mks-side-bg-active: color-mix(in srgb, #fff 90%, var(--mks-primary));
+  --mks-side-hover-bg: color-mix(in srgb, #fff 90%, var(--mks-primary));
+}
+
+/* ── 黑系主题：深色侧栏（对方 .vab-side-bar{background:#282c34}）── */
+.mks-theme-blue-black,
+.mks-theme-green-black,
+.mks-theme-red-black {
+  --mks-side-mode: deep;
+  --mks-bg-side: var(--mks-bg-side-deep);
+  --mks-side-text: #bfcbd9;
+  --mks-side-text-active: #ffffff;
+  --mks-side-bg-active: var(--mks-primary);
+  --mks-side-hover-bg: var(--mks-primary);
+}
+
+/* ── 彩色主题：仅换主色，深浅侧栏跟随后缀 ── */
+.mks-theme-green-white,
+.mks-theme-green-black {
+  --mks-primary: #41b584;
+  --mks-primary-grad: linear-gradient(90deg, #2f9d6f, #55c795);
+}
+.mks-theme-red-white,
+.mks-theme-red-black {
+  --mks-primary: #f34d37;
+  --mks-primary-grad: linear-gradient(90deg, #d93a26, #ff7058);
+}
+.mks-theme-blue-white,
+.mks-theme-blue-black {
+  --mks-primary: #1890ff;
+}
+
+/* =====================================================================
+ * Element Plus 变量覆盖：让 EP 组件（按钮/页签/分页/输入/表格）继承主色
+ * ===================================================================== */
+:root {
+  --el-color-primary: var(--mks-primary);
+  --el-color-primary-light-3: color-mix(in srgb, #fff 30%, var(--mks-primary));
+  --el-color-primary-light-5: color-mix(in srgb, #fff 50%, var(--mks-primary));
+  --el-color-primary-light-7: color-mix(in srgb, #fff 70%, var(--mks-primary));
+  --el-color-primary-light-8: color-mix(in srgb, #fff 80%, var(--mks-primary));
+  --el-color-primary-light-9: color-mix(in srgb, #fff 90%, var(--mks-primary));
+  --el-color-primary-dark-2: color-mix(in srgb, #000 20%, var(--mks-primary));
+
+  --el-color-success: var(--mks-success);
+  --el-color-success-light-9: color-mix(in srgb, #fff 90%, var(--mks-success));
+  --el-color-success-light-8: color-mix(in srgb, #fff 80%, var(--mks-success));
+  --el-color-success-light-5: color-mix(in srgb, #fff 50%, var(--mks-success));
+  --el-color-success-light-3: color-mix(in srgb, #fff 30%, var(--mks-success));
+  --el-color-warning: var(--mks-warning);
+  --el-color-warning-light-9: color-mix(in srgb, #fff 90%, var(--mks-warning));
+  --el-color-warning-light-5: color-mix(in srgb, #fff 50%, var(--mks-warning));
+  --el-color-warning-light-3: color-mix(in srgb, #fff 30%, var(--mks-warning));
+  --el-color-danger: var(--mks-danger);
+  --el-color-danger-light-9: color-mix(in srgb, #fff 90%, var(--mks-danger));
+  --el-color-danger-light-5: color-mix(in srgb, #fff 50%, var(--mks-danger));
+  --el-color-danger-light-3: color-mix(in srgb, #fff 30%, var(--mks-danger));
+  --el-color-error: var(--mks-danger);
+  --el-color-info: var(--mks-info);
+
+  --el-text-color-primary: var(--mks-text);
+  --el-text-color-regular: var(--mks-text-regular);
+  --el-text-color-secondary: var(--mks-text-secondary);
+  --el-text-color-placeholder: var(--mks-text-placeholder);
+  --el-border-color: var(--mks-border);
+  --el-border-color-light: var(--mks-border-light);
+  --el-border-color-lighter: var(--mks-border-light);
+  --el-bg-color: var(--mks-bg-white);
+  --el-bg-color-page: var(--mks-bg);
+  --el-fill-color-light: var(--mks-bg-header);
+  --el-fill-color-lighter: var(--mks-bg-header);
+
+  --el-border-radius-base: var(--mks-radius);
+  --el-border-radius-small: 2px;
+  --el-font-size-base: var(--mks-font-size);
+  --el-font-family: var(--mks-font-family);
+  --el-box-shadow-light: var(--mks-shadow-card);
+}

@@ -21,6 +21,8 @@ class SqlImport
         }
         $sql    = (string) file_get_contents($path);
         $count  = 0;
+        // 防复发：强制连接字符集（历史上曾因导入时连接非 utf8mb4 导致菜单标题存成双重编码乱码）
+        $pdo->exec("SET NAMES utf8mb4");
         foreach (self::split($sql) as $stmt) {
             if (trim($stmt) === '') {
                 continue;

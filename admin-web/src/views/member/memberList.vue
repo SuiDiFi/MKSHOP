@@ -64,8 +64,9 @@
         </el-table-column>
       </el-table>
       <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
+        <el-pagination background :total="total"
+          :page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          layout="total, sizes, prev, pager, next, jumper" @current-change="load" />
       </div>
     </el-card>
 
@@ -136,7 +137,7 @@ const loading = ref(false);
 const list = ref([]);
 const total = ref(0);
 const levels = ref([]);
-const query = reactive({ page: 1, limit: 15, keyword: '', level_id: null, status: null, pid: '' });
+const query = reactive({ page: 1, limit: 20, keyword: '', level_id: null, status: null, pid: '' });
 const formVisible = ref(false);
 const saving = ref(false);
 const form = ref({});

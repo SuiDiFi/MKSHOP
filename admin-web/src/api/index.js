@@ -96,6 +96,7 @@ export const goodsRestore = (id) => mksRequest(`/admin/goods/restore/${id}`, 'PO
 export const goodsModify = (id, field, value) =>
   mksRequest(`/admin/goods/modify/${id}`, 'POST', {}, { field, value });
 export const goodsStatusType = () => mksRequest('/admin/goods/status_type', 'POST');
+export const goodsStatusCounts = (params) => mksRequest('/admin/goods/status_counts', 'GET', params);
 export const goodsGoodsType = () => mksRequest('/admin/goods/goods_type', 'POST');
 export const goodsProvideType = () => mksRequest('/admin/goods/provide_type', 'POST');
 export const goodsDefaultTags = () => mksRequest('/admin/goods/default_tags_list', 'POST');
@@ -181,6 +182,7 @@ export const orderDelete = (id) => mksRequest(`/admin/order/delete/${id}`, 'POST
 export const orderModify = (id, field, value) =>
   mksRequest(`/admin/order/modify/${id}`, 'POST', {}, { field, value });
 export const orderStatusType = () => mksRequest('/admin/order/status_type', 'POST');
+export const orderStatusCounts = (params) => mksRequest('/admin/order/status_counts', 'GET', params);
 export const orderPayType = () => mksRequest('/admin/order/pay_type', 'POST');
 export const orderSync = (id) => mksRequest(`/admin/order/sync_order/${id}`, 'POST');
 

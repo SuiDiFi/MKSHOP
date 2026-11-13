@@ -308,6 +308,30 @@ class GoodsController extends Base
     }
 
     /**
+     * 商品状态页签数量角标（对齐 KASUSHOU 商品列表「全部商品(9107) 销售中(8048) …」）
+     * 口径：未软删商品（回收站用 status=8，与列表页签一致）
+     * GET goods/status_counts
+     */
+    public function statusCounts()
+    {
+        $byStatus = [];
+        foreach (Db::name('goods')->where('delete_time', 0)->field('status, COUNT(*) cnt')->group('status')->select()->toArray() as $r) {
+            $byStatus[(string) $r['status']] = (int) $r['cnt'];
+        }
+        // 预警：开了 warn_num 且库存已低于阈值
+        $warn = Db::name('goods')->where('delete_time', 0)->where('warn_num', '>', 0)
+            ->whereRaw('stock_num <= warn_num')->count();
+
+        return $this->ok([
+            // 全部 = 未软删商品（回收站单独计数，不混进“全部”避免角标与列表不一致）
+            'total'      => array_sum($byStatus),
+            'recycle'    => Db::name('goods')->where('delete_time', '>', 0)->count(),
+            'by_status'  => $byStatus,
+            'stock_warn' => $warn,
+        ]);
+    }
+
+    /**
      * 枚举：商品类型
      */
     public function goods_type()

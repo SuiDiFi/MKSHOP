@@ -13,6 +13,7 @@ use app\common\model\OrderLog;
 use app\common\model\PayList;
 use app\common\service\OrderService;
 use mks\traits\CurdTrait;
+use think\facade\Db;
 
 class OrderController extends Base
 {
@@ -35,6 +36,8 @@ class OrderController extends Base
         'pay_time'      => 'between',
         'user_where'    => 'eq',
         'goods_type'    => 'eq',
+        // 归属页签（1 自营 / 5 供货 / 6 渠道）：前端已发该条件，缺登记会被 where 白名单静默丢弃
+        'provide_type'  => 'eq',
         'supplier_id'   => 'eq',
         'vip_id'        => 'eq',
         'total_price'   => 'between',
@@ -266,6 +269,44 @@ class OrderController extends Base
     {
         return $this->ok(\app\common\model\SysDict::where('dict_type', 'order_status')
             ->where('status', 1)->order('sort asc')->field('code,label,color')->select()->toArray());
+    }
+
+    /**
+     * 页签数量角标（对齐 KASUSHOU 订单列表「所有订单 10612 / 平台订单 …」）
+     * 口径：近 N 天创建且未软删的订单（默认 30 天，与列表默认区间一致）
+     * 简化说：不跟随当前筛选条件联动（要联动需把 CurdTrait 的 where DSL 复用进聚合查询，列入后续）
+     * GET order/status_counts?days=30
+     */
+    public function statusCounts()
+    {
+        $days = (int) $this->request->param('days', 30);
+        $base = function () use ($days) {
+            $q = Db::name('order')->where('delete_time', 0);
+            if ($days > 0) {
+                $q->where('create_time', '>=', time() - $days * 86400);
+            }
+            return $q;
+        };
+
+        $byStatus = [];
+        foreach ($base()->field('status, COUNT(*) cnt')->group('status')->select()->toArray() as $r) {
+            $byStatus[(string) $r['status']] = (int) $r['cnt'];
+        }
+        $byProvide = [];
+        foreach ($base()->field('provide_type, COUNT(*) cnt')->group('provide_type')->select()->toArray() as $r) {
+            $byProvide[(string) $r['provide_type']] = (int) $r['cnt'];
+        }
+
+        return $this->ok([
+            'days'        => $days,
+            'total'       => array_sum($byStatus),
+            'by_status'   => $byStatus,
+            'by_provide'  => $byProvide,
+            // 部分退款：已退款金额>0 且交易成功
+            'part_refund' => $base()->where('has_back_money', '>', 0)->where('status', 3)->count(),
+            // 异常订单
+            'fail'        => $base()->where('is_fail', 1)->count(),
+        ]);
     }
 
     /**

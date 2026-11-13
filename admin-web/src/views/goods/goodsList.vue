@@ -1,60 +1,89 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-input v-model="query.keyword" placeholder="商品名称/编号" clearable style="width: 190px" @keyup.enter="doSearch" />
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 120px" @change="doSearch">
-            <el-option v-for="s in statusOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
-          </el-select>
-          <el-select v-model="query.goods_type" placeholder="全部类型" clearable style="width: 110px" @change="doSearch">
-            <el-option v-for="s in typeOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
-          </el-select>
-          <el-select v-model="query.provide_type" placeholder="供货方式" clearable style="width: 110px" @change="doSearch">
-            <el-option v-for="s in provideOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
-          </el-select>
-          <el-tree-select v-model="query.category_id" :data="categoryTree" check-strictly clearable
-            node-key="id" :props="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="商品分类" style="width: 150px" @change="doSearch" />
-          <el-input v-model="query.uid" placeholder="供货商ID" clearable style="width: 90px" @keyup.enter="doSearch" />
-          <el-button link type="primary" @click="filterExpanded = !filterExpanded">{{ filterExpanded ? '收起' : '展开' }}</el-button>
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="openForm()">添加商品</el-button>
-        </div>
-        <!-- 展开区：更多筛选项（对齐 KASUSHOU） -->
-        <div v-if="filterExpanded" class="toolbar" style="margin-top: 8px">
-          <span class="muted">成本价</span>
-          <el-input v-model="query.cost_value_min" placeholder="≥" style="width: 80px" @keyup.enter="doSearch" />
-          <span class="muted">~</span>
-          <el-input v-model="query.cost_value_max" placeholder="≤" style="width: 80px" @keyup.enter="doSearch" />
-          <span class="muted">销售价</span>
-          <el-input v-model="query.real_price_min" placeholder="≥" style="width: 80px" @keyup.enter="doSearch" />
-          <span class="muted">~</span>
-          <el-input v-model="query.real_price_max" placeholder="≤" style="width: 80px" @keyup.enter="doSearch" />
-          <el-select v-model="query.only_balance" placeholder="余额限购" clearable style="width: 120px" @change="doSearch">
-            <el-option label="仅余额支付" :value="1" />
-            <el-option label="不限" :value="0" />
-          </el-select>
-          <el-select v-model="query.need_balance" placeholder="销售限价" clearable style="width: 120px" @change="doSearch">
-            <el-option label="需要限价" :value="1" />
-            <el-option label="不限" :value="0" />
-          </el-select>
-          <el-date-picker v-model="query.create_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
-            start-placeholder="创建开始" end-placeholder="创建结束" style="width: 330px" @change="doSearch" />
-        </div>
-      </template>
+  <mks-page>
+    <!-- 引导条（对齐对方商品列表） -->
+    <template #alert>
+      商品上架前请先配好分类与卡库；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/category')">商品分类</a>·
+      <a class="quick-link" @click="goCfg('/goods/cardstock')">卡密库存</a>·
+      <a class="quick-link" @click="goCfg('/goods/goodstpl')">商品模板</a>
+    </template>
 
-      <!-- 批量操作（对齐 KASUSHOU：批量回收站/导出/复制参数/今日创建） -->
-      <div class="toolbar" style="margin-bottom: 10px">
-        <el-button :disabled="!selection.length" type="danger" plain @click="batchRecycle">批量移至回收站({{ selection.length }})</el-button>
-        <el-button plain @click="filterToday">今日创建</el-button>
-        <el-button plain @click="doExport">导出</el-button>
-        <el-button :disabled="!selection.length" plain @click="copyGoods">复制参数</el-button>
-        <span class="muted" style="margin-left: 8px">已选 {{ selection.length }} 个商品</span>
-      </div>
+    <!-- 筛选区：默认 5 项，其余折叠 -->
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="关键字"><el-input v-model="query.keyword" placeholder="商品名称/编号" clearable style="width: 190px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 120px" @change="doSearch">
+              <el-option v-for="s in statusOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="类型">
+            <el-select v-model="query.goods_type" placeholder="全部类型" clearable style="width: 110px" @change="doSearch">
+              <el-option v-for="s in typeOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="分类">
+            <el-tree-select v-model="query.category_id" :data="categoryTree" check-strictly clearable
+              node-key="id" :props="{ label: 'name', value: 'id', children: 'children' }"
+              placeholder="商品分类" style="width: 150px" @change="doSearch" />
+          </el-form-item>
+          <el-form-item label="供货商ID"><el-input v-model="query.uid" placeholder="供货商ID" clearable style="width: 90px" @keyup.enter="doSearch" /></el-form-item>
+        </template>
+        <template #more>
+          <el-form-item label="供货方式">
+            <el-select v-model="query.provide_type" placeholder="供货方式" clearable style="width: 110px" @change="doSearch">
+              <el-option v-for="s in provideOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="成本价">
+            <el-input v-model="query.cost_value_min" placeholder="≥" style="width: 80px" @keyup.enter="doSearch" />
+            <span style="margin: 0 4px">~</span>
+            <el-input v-model="query.cost_value_max" placeholder="≤" style="width: 80px" @keyup.enter="doSearch" />
+          </el-form-item>
+          <el-form-item label="销售价">
+            <el-input v-model="query.real_price_min" placeholder="≥" style="width: 80px" @keyup.enter="doSearch" />
+            <span style="margin: 0 4px">~</span>
+            <el-input v-model="query.real_price_max" placeholder="≤" style="width: 80px" @keyup.enter="doSearch" />
+          </el-form-item>
+          <el-form-item label="余额限购">
+            <el-select v-model="query.only_balance" placeholder="余额限购" clearable style="width: 120px" @change="doSearch">
+              <el-option label="仅余额支付" :value="1" />
+              <el-option label="不限" :value="0" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="销售限价">
+            <el-select v-model="query.need_balance" placeholder="销售限价" clearable style="width: 120px" @change="doSearch">
+              <el-option label="需要限价" :value="1" />
+              <el-option label="不限" :value="0" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="创建时间">
+            <el-date-picker v-model="query.create_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
+              start-placeholder="创建开始" end-placeholder="创建结束" style="width: 330px" @change="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
 
-      <el-table :data="list" border v-loading="loading" @selection-change="(s) => (selection = s)">
+    <!-- 状态页签（对齐对方「全部商品(9107) 销售中(8048) …」，带真实数量角标） -->
+    <template #status>
+      <mks-status-tabs v-model="query.status" :tabs="statusTabDefs" @update:model-value="doSearch" />
+    </template>
+
+    <!-- 批量操作（统一左上） -->
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">添加商品</el-button>
+      <el-button size="small" :disabled="!selection.length" type="danger" plain @click="batchRecycle">批量移至回收站({{ selection.length }})</el-button>
+      <el-button size="small" plain @click="filterToday">今日创建</el-button>
+      <el-button size="small" plain @click="doExport">导出</el-button>
+      <el-button size="small" :disabled="!selection.length" plain @click="copyGoods">复制参数</el-button>
+      <span class="muted" style="margin-left: 8px">已选 {{ selection.length }} 个商品</span>
+    </template>
+
+      <!-- 表格（对方商品列表：无边框无斑马、字号 12px） -->
+      <el-table :data="list" size="small" v-loading="loading" @selection-change="(s) => (selection = s)">
+        <template #empty><mks-empty text="没有符合条件的商品" hint="试试放宽筛选条件，或先添加商品" /></template>
         <el-table-column type="selection" width="42" fixed="left" />
         <el-table-column prop="sort" label="排序" width="62" />
         <el-table-column prop="id" label="ID" width="62" />
@@ -120,11 +149,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑商品' : '新增商品'" width="680px" top="5vh">
       <el-form :model="form" label-width="100px">
@@ -184,18 +214,23 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   goodsIndex, goodsRead, goodsCreate, goodsSave, goodsDelete, goodsDestroy, goodsRestore,
-  goodsModify, goodsStatusType, goodsGoodsType, goodsProvideType, goodsDefaultTags, categoryList, tagsList,
+  goodsModify, goodsStatusType, goodsStatusCounts, goodsGoodsType, goodsProvideType, goodsDefaultTags, categoryList, tagsList,
   goodsTplList, exportCsv,
 } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
 
+const router = useRouter();
 const loading = ref(false);
 const saving = ref(false);
 const list = ref([]);
@@ -207,9 +242,40 @@ const provideOptions = ref([]);
 const tagsOptions = ref([]);
 const tplOptions = ref([]);
 const categoryTree = ref([]);
-const filterExpanded = ref(false);
+const statusCounts = ref({ total: 0, by_status: {}, recycle: 0, stock_warn: 0 });
+
+/** 状态页签 = 全部 + 字典各项（带真实数量）+ 回收站 */
+const statusTabDefs = computed(() => {
+  const c = statusCounts.value;
+  const out = [{ label: '全部商品', value: '', count: c.total ?? 0 }];
+  for (const s of statusOptions.value) {
+    // 回收站(8)单独用 recycle 计数（已软删，不在 by_status 里）
+    const n = Number(s.code) === 8 ? (c.recycle ?? 0) : (c.by_status?.[s.code] ?? 0);
+    if (Number(s.code) === 7) {
+      out.push({ label: s.label, value: Number(s.code), count: c.stock_warn ?? 0 });
+      continue;
+    }
+    out.push({ label: s.label, value: Number(s.code), count: n });
+  }
+  return out;
+});
+
+async function loadStatusCounts() {
+  try {
+    const res = await goodsStatusCounts();
+    statusCounts.value = res.data || statusCounts.value;
+  } catch (e) {
+    /* 角标失败不阻断列表 */
+  }
+}
+
+/** 引导条快捷入口 */
+function goCfg(path) {
+  router.push(path);
+}
+
 const query = reactive({
-  page: 1, limit: 15, keyword: '', status: null, goods_type: null, provide_type: null,
+  page: 1, limit: 20, keyword: '', status: null, goods_type: null, provide_type: null,
   category_id: null, uid: '', cost_value_min: '', cost_value_max: '',
   real_price_min: '', real_price_max: '', only_balance: null, need_balance: null,
   create_range: null, today: false,
@@ -392,10 +458,15 @@ async function doDestroy(id) {
 onMounted(async () => {
   await loadEnums();
   load();
+  loadStatusCounts();
 });
 </script>
 
 <style scoped>
-.muted { color: #909399; font-size: 12px; }
+.muted { color: var(--mks-text-placeholder); font-size: var(--mks-font-size-table); }
+.quick-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
 .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 </style>

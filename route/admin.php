@@ -90,6 +90,8 @@ Route::group('admin', function () {
         Route::post('goods/sort', 'admin.GoodsController/sort');
         Route::post('goods/save_goods_stock', 'admin.GoodsController/save_goods_stock');
         Route::post('goods/status_type', 'admin.GoodsController/status_type');
+        // 商品状态页签数量角标（M8 UI 对齐；权限点见 mks_m8c.sql）
+        Route::get('goods/status_counts', 'admin.GoodsController/statusCounts');
         Route::get('goods/export', 'admin.GoodsController/export');              // M7 商品导出 CSV
         // 商品下单输入项模板（M7 对齐 KASUSHOU 商品模板）
         Route::get('goods_tpl/index', 'admin.GoodsTplController/index');
@@ -145,6 +147,8 @@ Route::group('admin', function () {
         Route::post('order/delete/:id', 'admin.OrderController/delete');
         Route::post('order/modify/:id', 'admin.OrderController/modify');
         Route::post('order/status_type', 'admin.OrderController/status_type');
+        // 页签数量角标（M8 UI 对齐；权限点见 mks_m8b.sql）
+        Route::get('order/status_counts', 'admin.OrderController/statusCounts');
         Route::post('order/pay_type', 'admin.OrderController/pay_type');
         Route::post('order/sync_order/:id', 'admin.OrderController/sync_order');
         Route::post('order/do_get_order', 'admin.OrderController/do_get_order'); // 后台补单

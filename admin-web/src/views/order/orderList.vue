@@ -1,26 +1,33 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <!-- 状态页签（对齐 KASUSHOU：全部/等待支付/等待处理/正在处理/交易成功/取消交易/已经退款/取消支付/部分退款/异常订单） -->
-      <el-tabs v-model="query.statusTab" @tab-change="doSearch">
-        <el-tab-pane v-for="t in statusTabs" :key="String(t.value)" :label="t.label" :name="String(t.value)" />
-      </el-tabs>
+  <mks-page>
+    <!-- 引导条（对方每个业务列表都有） -->
+    <template #alert>
+      默认展示近 30 天创建的订单；金额单位元。快捷入口：
+      <a class="quick-link" @click="goCfg">订单配置</a>
+    </template>
 
-      <!-- 筛选区 -->
-      <el-form inline size="default" class="filter-form" @submit.prevent>
-        <el-form-item label="订单号"><el-input v-model="query.ordersn" clearable style="width: 170px" @keyup.enter="doSearch" /></el-form-item>
-        <el-form-item label="下单参数"><el-input v-model="query.recharge_account" clearable style="width: 150px" @keyup.enter="doSearch" /></el-form-item>
-        <el-form-item label="用户ID"><el-input v-model="query.uid" clearable style="width: 90px" @keyup.enter="doSearch" /></el-form-item>
-        <el-form-item label="商品名称"><el-input v-model="query.goods_name" clearable style="width: 150px" @keyup.enter="doSearch" /></el-form-item>
-        <template v-if="filterExpanded">
+    <!-- 筛选区：默认 5 项，其余折叠（对方文案「展开/合并」） -->
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="订单号"><el-input v-model="query.ordersn" clearable placeholder="订单号" style="width: 170px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="下单参数"><el-input v-model="query.recharge_account" clearable placeholder="下单参数" style="width: 150px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="用户ID"><el-input v-model="query.uid" clearable placeholder="用户ID" style="width: 90px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="商品名称"><el-input v-model="query.goods_name" clearable placeholder="商品名称" style="width: 150px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="创建时间">
+            <el-date-picker v-model="query.create_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
+              start-placeholder="开始" end-placeholder="结束" style="width: 330px" @change="doSearch" />
+          </el-form-item>
+        </template>
+        <template #more>
           <el-form-item label="支付方式">
-            <el-select v-model="query.pay_type" clearable style="width: 110px" @change="doSearch">
+            <el-select v-model="query.pay_type" clearable placeholder="支付方式" style="width: 110px" @change="doSearch">
               <el-option label="余额支付" value="balance" />
               <el-option label="在线支付" value="online" />
             </el-select>
           </el-form-item>
           <el-form-item label="下单来源">
-            <el-select v-model="query.user_where" clearable style="width: 110px" @change="doSearch">
+            <el-select v-model="query.user_where" clearable placeholder="下单来源" style="width: 110px" @change="doSearch">
               <el-option label="PC" value="pc" />
               <el-option label="H5" value="h5" />
               <el-option label="小程序" value="mp" />
@@ -28,11 +35,11 @@
             </el-select>
           </el-form-item>
           <el-form-item label="商品类型">
-            <el-select v-model="query.goods_type" clearable style="width: 110px" @change="doSearch">
+            <el-select v-model="query.goods_type" clearable placeholder="商品类型" style="width: 110px" @change="doSearch">
               <el-option v-for="s in goodsTypeOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
             </el-select>
           </el-form-item>
-          <el-form-item label="供货商ID"><el-input v-model="query.supplier_id" clearable style="width: 90px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="供货商ID"><el-input v-model="query.supplier_id" clearable placeholder="供货商ID" style="width: 90px" @keyup.enter="doSearch" /></el-form-item>
           <el-form-item label="销售价">
             <el-input v-model="query.total_price_min" placeholder="≥" style="width: 90px" @keyup.enter="doSearch" />
             <span style="margin: 0 4px">~</span>
@@ -43,44 +50,43 @@
             <span style="margin: 0 4px">~</span>
             <el-input v-model="query.cost_value_max" placeholder="≤" style="width: 90px" @keyup.enter="doSearch" />
           </el-form-item>
-          <el-form-item label="创建时间">
-            <el-date-picker v-model="query.create_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
-              start-placeholder="开始" end-placeholder="结束" style="width: 330px" @change="doSearch" />
-          </el-form-item>
           <el-form-item label="完成时间">
             <el-date-picker v-model="query.finish_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
               start-placeholder="开始" end-placeholder="结束" style="width: 330px" @change="doSearch" />
           </el-form-item>
         </template>
-        <el-form-item>
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button link type="primary" @click="filterExpanded = !filterExpanded">{{ filterExpanded ? '收起' : '展开' }}</el-button>
-        </el-form-item>
-      </el-form>
+      </mks-query-form>
+    </template>
 
-      <!-- 批量操作（对齐 KASUSHOU：批量删除/处理订单/批量补单/批量同步回调/导出订单/复制参数/自定义表格列） -->
-      <div class="toolbar" style="margin-bottom: 10px">
-        <el-button :disabled="!selection.length" type="danger" plain @click="batchDelete">批量删除({{ selection.length }})</el-button>
-        <el-button :disabled="!selection.length" type="warning" plain @click="batchAction('bu')">批量补单</el-button>
-        <el-button :disabled="!selection.length" type="warning" plain @click="batchAction('sync')">批量同步回调</el-button>
-        <el-button type="primary" plain @click="doExport">导出订单</el-button>
-        <el-button :disabled="!selection.length" plain @click="copyParams">复制参数</el-button>
-        <el-dropdown style="margin-left: 8px" @command="(c) => toggleCol(c)">
-          <el-button plain>自定义表格列<el-icon style="margin-left: 4px"><i-ep-arrow-down /></el-icon></el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item v-for="c in allColumns" :key="c.key" :command="c.key">
-                <el-checkbox :model-value="c.visible" @click.prevent>{{ c.label }}</el-checkbox>
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <span class="muted" style="margin-left: 12px">已选 {{ selection.length }} 条</span>
-      </div>
+    <!-- 双轨筛选（对齐对方：上归属页签带数量 + 下状态胶囊排，自定义列直接放进胶囊排） -->
+    <template #status>
+      <mks-status-tabs
+        v-model="query.provideTab"
+        v-model:pill-value="query.statusTab"
+        :tabs="tabDefs"
+        :pills="pillDefs"
+        @update:model-value="doSearch"
+        @update:pill-value="doSearch"
+      >
+        <template #extra>
+          <mks-column-setter v-model="visibleCols" :columns="allColumns" store-key="order" />
+        </template>
+      </mks-status-tabs>
+    </template>
 
-      <!-- 表格 -->
-      <el-table :data="list" border v-loading="loading" @selection-change="(s) => (selection = s)">
+    <!-- 批量操作（统一左上） -->
+    <template #toolbar>
+      <el-button size="small" :disabled="!selection.length" type="danger" plain @click="batchDelete">批量删除({{ selection.length }})</el-button>
+      <el-button size="small" :disabled="!selection.length" type="warning" plain @click="batchAction('bu')">批量补单</el-button>
+      <el-button size="small" :disabled="!selection.length" type="warning" plain @click="batchAction('sync')">批量同步回调</el-button>
+      <el-button size="small" type="primary" plain @click="doExport">导出订单</el-button>
+      <el-button size="small" :disabled="!selection.length" plain @click="copyParams">复制参数</el-button>
+      <span class="muted" style="margin-left: 12px">已选 {{ selection.length }} 条</span>
+    </template>
+
+      <!-- 表格（对方订单表有边框、字号 12px、操作列文字按钮 + 冻结右列） -->
+      <el-table :data="list" border size="small" v-loading="loading" @selection-change="(s) => (selection = s)">
+        <template #empty><mks-empty text="没有符合条件的订单" hint="试试放宽筛选条件或切换状态页签" /></template>
         <el-table-column type="selection" width="42" fixed="left" />
         <el-table-column label="订单状态" width="110" v-if="colVisible('status')">
           <template #default="{ row }">
@@ -102,13 +108,13 @@
           </template>
         </el-table-column>
         <el-table-column label="销售价" width="95" v-if="colVisible('total_price')">
-          <template #default="{ row }"><b style="color: #f56c6c">{{ row.total_price }}</b></template>
+          <template #default="{ row }"><b class="money-out">{{ row.total_price }}</b></template>
         </el-table-column>
         <el-table-column label="成本价" width="90" v-if="colVisible('cost_value')">
           <template #default="{ row }">{{ row.cost_value }}</template>
         </el-table-column>
         <el-table-column label="利润" width="90" v-if="colVisible('order_price')">
-          <template #default="{ row }"><b style="color: #67c23a">{{ row.order_price }}</b></template>
+          <template #default="{ row }"><b class="money-in">{{ row.order_price }}</b></template>
         </el-table-column>
         <el-table-column label="下单时间" width="160" v-if="colVisible('create_time')">
           <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
@@ -133,11 +139,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <!-- 详情抽屉 -->
     <el-drawer v-model="detailVisible" title="订单详情" size="560px">
@@ -180,75 +187,82 @@
         </el-timeline>
       </template>
     </el-drawer>
-  </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
-  orderIndex, orderInfo, orderGoodsCards, orderDual, orderDelete, orderStatusType, orderSync, exportCsv,
+  orderIndex, orderInfo, orderGoodsCards, orderDual, orderDelete, orderStatusCounts, orderSync, exportCsv,
 } from '@/api';
 import { orderBu, orderNoBu } from '@/api/m3';
 import { goodsGoodsType } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksColumnSetter from '@/components/mksColumnSetter.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
 
+const router = useRouter();
 const loading = ref(false);
 const list = ref([]);
 const total = ref(0);
 const selection = ref([]);
 const goodsTypeOptions = ref([]);
-const filterExpanded = ref(false);
 const detailVisible = ref(false);
 const detail = ref({ order: null, logs: [], cards: [] });
+/** 页签数量角标（order/status_counts，默认近 30 天口径） */
+const counts = ref({ by_status: {}, by_provide: {}, total: 0, part_refund: 0, fail: 0 });
 
-// 状态页签（对齐 KASUSHOU 订单列表）
-const statusTabs = [
-  { label: '全部订单', value: '' },
-  { label: '等待支付', value: 0 },
-  { label: '等待处理', value: 1 },
-  { label: '正在处理', value: 2 },
-  { label: '交易成功', value: 3 },
-  { label: '取消交易', value: 4 },
-  { label: '已经退款', value: 5 },
-  { label: '取消支付', value: -1 },
-  { label: '部分退款', value: 'part' },
-  { label: '异常订单', value: 'fail' },
-];
-
-// 列显隐（自定义表格列，localStorage 持久化）
-const COLS_KEY = 'mks_order_cols';
-const allColumns = ref([
-  { key: 'status', label: '订单状态', visible: true },
-  { key: 'ordersn', label: '订单号', visible: true },
-  { key: 'goods_name', label: '商品名称', visible: true },
-  { key: 'recharge_account', label: '下单参数', visible: true },
-  { key: 'user', label: '用户/发货渠道', visible: true },
-  { key: 'total_price', label: '销售价', visible: true },
-  { key: 'cost_value', label: '成本价', visible: true },
-  { key: 'order_price', label: '利润', visible: true },
-  { key: 'create_time', label: '下单时间', visible: true },
-  { key: 'finish_time', label: '处理时间', visible: true },
+/** 上层页签：订单归属维度（取我方 provide_type 字典：1 自营 / 5 供货 / 6 渠道） */
+const tabDefs = computed(() => [
+  { label: '所有订单', value: '', count: counts.value.total },
+  { label: '平台订单', value: 1, count: counts.value.by_provide?.['1'] ?? 0 },
+  { label: '供货订单', value: 5, count: counts.value.by_provide?.['5'] ?? 0 },
+  { label: '渠道订单', value: 6, count: counts.value.by_provide?.['6'] ?? 0 },
 ]);
-try {
-  const saved = JSON.parse(localStorage.getItem(COLS_KEY) || 'null');
-  if (Array.isArray(saved)) {
-    for (const c of allColumns.value) {
-      c.visible = saved[c.key] !== false;
-    }
-  }
-} catch (e) { /* 忽略本地存储异常 */ }
-const colVisible = (key) => allColumns.value.find((c) => c.key === key)?.visible !== false;
-function toggleCol(key) {
-  const c = allColumns.value.find((x) => x.key === key);
-  if (!c) return;
-  c.visible = !c.visible;
-  const map = {};
-  for (const x of allColumns.value) map[x.key] = x.visible;
-  localStorage.setItem(COLS_KEY, JSON.stringify(map));
+
+/** 下层胶囊：状态维度（对齐 KASUSHOU 订单状态页签） */
+const pillDefs = computed(() => {
+  const s = counts.value.by_status || {};
+  return [
+    { label: '全部订单', value: '' },
+    { label: '等待支付', value: 0, count: s['0'] ?? 0 },
+    { label: '等待处理', value: 1, count: s['1'] ?? 0 },
+    { label: '正在处理', value: 2, count: s['2'] ?? 0 },
+    { label: '交易成功', value: 3, count: s['3'] ?? 0 },
+    { label: '取消交易', value: 4, count: s['4'] ?? 0 },
+    { label: '已经退款', value: 5, count: s['5'] ?? 0 },
+    { label: '取消支付', value: -1, count: s['-1'] ?? 0 },
+    { label: '部分退款', value: 'part', count: counts.value.part_refund ?? 0 },
+    { label: '异常订单', value: 'fail', count: counts.value.fail ?? 0 },
+  ];
+});
+
+/** 列定义（mksColumnSetter 用 prop 作键，可见列存于 visibleCols） */
+const allColumns = [
+  { prop: 'status', label: '订单状态' },
+  { prop: 'ordersn', label: '订单号' },
+  { prop: 'goods_name', label: '商品名称' },
+  { prop: 'recharge_account', label: '下单参数' },
+  { prop: 'user', label: '用户/发货渠道' },
+  { prop: 'total_price', label: '销售价' },
+  { prop: 'cost_value', label: '成本价' },
+  { prop: 'order_price', label: '利润' },
+  { prop: 'create_time', label: '下单时间' },
+  { prop: 'finish_time', label: '处理时间' },
+];
+const visibleCols = ref(allColumns.map((c) => c.prop));
+const colVisible = (prop) => visibleCols.value.includes(prop);
+
+function goCfg() {
+  // 必须指向真实页面：/setting/base 是无组件的容器节点，直接跳会白屏
+  router.push('/setting/base/general');
 }
 
 const query = reactive({
-  page: 1, limit: 15, statusTab: '', ordersn: '', recharge_account: '', uid: '', goods_name: '',
+  page: 1, limit: 20, statusTab: '', provideTab: '', ordersn: '', recharge_account: '', uid: '', goods_name: '',
   pay_type: null, user_where: null, goods_type: null, supplier_id: '', total_price_min: '', total_price_max: '',
   cost_value_min: '', cost_value_max: '', create_range: null, finish_range: null,
 });
@@ -265,6 +279,10 @@ function buildWhere() {
     where.push({ field: 'is_fail', op: 'eq', value: 1 });
   } else if (t !== '' && t !== null) {
     where.push({ field: 'status', op: 'eq', value: Number(t) });
+  }
+  // 归属页签（上层）与状态（下层）可叠加
+  if (query.provideTab !== '' && query.provideTab !== null) {
+    where.push({ field: 'provide_type', op: 'eq', value: Number(query.provideTab) });
   }
   if (query.ordersn) where.push({ field: 'ordersn', op: 'like', value: query.ordersn });
   if (query.recharge_account) where.push({ field: 'recharge_account', op: 'like', value: query.recharge_account });
@@ -309,11 +327,21 @@ function doSearch() {
 
 function resetQuery() {
   Object.assign(query, {
-    page: 1, statusTab: '', ordersn: '', recharge_account: '', uid: '', goods_name: '',
+    page: 1, statusTab: '', provideTab: '', ordersn: '', recharge_account: '', uid: '', goods_name: '',
     pay_type: null, user_where: null, goods_type: null, supplier_id: '', total_price_min: '', total_price_max: '',
     cost_value_min: '', cost_value_max: '', create_range: null, finish_range: null,
   });
   load();
+}
+
+/** 刷新页签角标（与列表并行，不阻塞渲染） */
+async function loadCounts() {
+  try {
+    const res = await orderStatusCounts({ days: 30 });
+    counts.value = res.data || counts.value;
+  } catch (e) {
+    /* 角标失败不影响列表 */
+  }
 }
 
 async function doExport() {
@@ -392,10 +420,17 @@ onMounted(async () => {
   const gt = await goodsGoodsType();
   goodsTypeOptions.value = gt.data || [];
   load();
+  loadCounts();
 });
 </script>
 
 <style scoped>
-.filter-form :deep(.el-form-item) { margin-bottom: 8px; }
-.muted { color: #909399; font-size: 12px; }
+.muted { color: var(--mks-text-placeholder); font-size: var(--mks-font-size-table); }
+.quick-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
+/* 表格金额列用变量，不再硬编码色值 */
+.money-out { color: var(--mks-danger); }
+.money-in { color: var(--mks-success); }
 </style>

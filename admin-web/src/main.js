@@ -3,17 +3,22 @@ import { createPinia } from 'pinia';
 import ElementPlus from 'element-plus';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import 'element-plus/dist/index.css';
+import 'remixicon/fonts/remixicon.css';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 
 import App from './App.vue';
-import { router } from './router';
+import { router } from '@/router';
 import './styles/main.css';
+import { useSettingsStore } from '@/store/settings';
 
 const app = createApp(App);
 
 app.use(createPinia());
 app.use(router);
 app.use(ElementPlus, { locale: zhCn });
+
+// 挂载前应用主题/布局类名，避免刷新时主题闪变
+useSettingsStore().boot();
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);

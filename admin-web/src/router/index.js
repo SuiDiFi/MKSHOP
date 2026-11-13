@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Layout from '@/layout/index.vue';
+import progress from '@/utils/progress';
+import { useSettingsStore } from '@/store/settings';
 
 // 静态路由
 export const staticRoutes = [
@@ -69,7 +71,14 @@ export function registerDynamicRoutes(menus) {
           path: selfPath,
           name: `M${node.id}`,
           component: view,
-          meta: { title: node.title || node.name, icon: node.icon, menuId: node.id },
+          meta: {
+            title: node.title || node.name,
+            icon: node.icon,
+            menuId: node.id,
+            // 标签页行为对齐 KASUSHOU：首页不可关闭；隐藏页（编辑页等）不入标签
+            noClosable: Number(node.noClosable) === 1 || node.name === 'Index',
+            tabHidden: Number(node.hidden) === 1 || Number(node.tabHidden) === 1,
+          },
         };
         router.addRoute('Layout', route);
         added.push(route);
@@ -84,3 +93,17 @@ export function registerDynamicRoutes(menus) {
   });
   return added;
 }
+
+// ── 顶部进度条（主题配置可关）──
+// 守卫执行时 pinia 已安装（导航发生在 app.mount 之后），可直接取 store
+router.beforeEach(() => {
+  let on = true;
+  try {
+    on = useSettingsStore().showProgressBar;
+  } catch (e) {
+    on = true;
+  }
+  if (on) progress.start();
+  return true;
+});
+router.afterEach(() => progress.done());

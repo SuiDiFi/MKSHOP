@@ -1,109 +1,125 @@
 <template>
-  <el-container class="layout">
-    <el-aside :width="collapse ? '64px' : '220px'" class="aside">
-      <div class="logo-bar">
-        <span class="logo">MK</span>
-        <span v-show="!collapse" class="title">MKSHOP</span>
-      </div>
-      <el-scrollbar>
-        <el-menu
-          :default-active="activeMenu"
-          :collapse="collapse"
-          :collapse-transition="false"
-          background-color="#1f2d3d"
-          text-color="#bfcbd9"
-          active-text-color="#409eff"
-          router
-        >
-          <menu-item v-for="node in visibleMenus" :key="node.id" :node="node" />
-        </el-menu>
-      </el-scrollbar>
-    </el-aside>
+  <div class="mks-layout">
+    <!-- 分栏（默认）：266px = 64 渠道图标列 + 202 二级菜单 -->
+    <column-bar v-if="settings.isColumn" />
+    <!-- 纵向 / 综合：266px 侧栏（折叠 64px） -->
+    <side-menu v-else-if="settings.isVertical" />
 
-    <el-container>
-      <el-header class="header">
-        <div class="left">
-          <el-icon class="collapse-btn" @click="collapse = !collapse">
-            <Expand v-if="collapse" /><Fold v-else />
-          </el-icon>
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="route.meta?.title">{{ route.meta.title }}</el-breadcrumb-item>
-          </el-breadcrumb>
+    <div class="wrapper">
+      <!-- 横向：菜单与功能区同处 60px 一行 -->
+      <div v-if="settings.isHorizontal" class="header-row">
+        <horizontal-menu />
+        <nav-bar compact @open-theme="themeVisible = true" />
+      </div>
+      <nav-bar v-else @open-theme="themeVisible = true" />
+
+      <tabs-view v-if="settings.showTabs" />
+
+      <main class="app-main">
+        <div class="app-main-inner">
+          <router-view v-slot="{ Component, route: r }">
+            <transition name="fade-transform" mode="out-in">
+              <component :is="Component" :key="r.fullPath" />
+            </transition>
+          </router-view>
         </div>
-        <div class="right">
-          <el-dropdown @command="onCommand">
-            <span class="user">
-              <el-avatar :size="30" class="avatar">{{ (user.userinfo.username || 'A').slice(0, 1).toUpperCase() }}</el-avatar>
-              <span class="name">{{ user.userinfo.realname || user.userinfo.username || '管理员' }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="logout">
-                  <el-icon><SwitchButton /></el-icon>退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-      <el-main class="main">
-        <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+
+        <footer class="mks-footer">
+          <mks-icon name="copyright-line" :size="14" />
+          <span>Copyright {{ year }} MKSHOP</span>
+        </footer>
+      </main>
+    </div>
+
+    <theme-drawer v-model="themeVisible" />
+  </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { ElMessageBox } from 'element-plus';
-import { useUserStore } from '@/store/user';
-import MenuItem from './menu-item.vue';
+/**
+ * 后台布局骨架（对齐 KASUSHOU vue-admin-beautiful 的三种导航形态）
+ * 尺寸与结构取证见 docs/UI-后台对齐KASUSHOU.md §1.2 / §1.3
+ */
+import { ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useSettingsStore } from '@/store/settings';
+import { useTabsStore } from '@/store/tabs';
+import ColumnBar from './columnBar.vue';
+import SideMenu from './sideMenu.vue';
+import HorizontalMenu from './horizontalMenu.vue';
+import NavBar from './navBar.vue';
+import TabsView from './tabsView.vue';
+import ThemeDrawer from './themeDrawer.vue';
+import mksIcon from '@/components/mksIcon.vue';
 
 const route = useRoute();
-const router = useRouter();
-const user = useUserStore();
-const collapse = ref(false);
+const settings = useSettingsStore();
+const tabs = useTabsStore();
+const themeVisible = ref(false);
+const year = new Date().getFullYear();
 
-const visibleMenus = computed(() =>
-  (user.menus || []).filter((m) => !m.hidden && m.path && m.path !== '/')
+settings.boot();
+
+// 路由变化 → 登记标签（对方无 keep-alive，页面每次重建）
+watch(
+  () => route.fullPath,
+  () => tabs.addView(route),
+  { immediate: true }
 );
-const activeMenu = computed(() => route.meta?.menuId ? `M${route.meta.menuId}` : route.path);
-
-async function onCommand(cmd) {
-  if (cmd === 'logout') {
-    await ElMessageBox.confirm('确定退出登录？', '提示', { type: 'warning' });
-    await user.logout();
-    router.push('/login');
-  }
-}
 </script>
 
 <style scoped>
-.layout { height: 100%; }
-.aside {
-  background: #1f2d3d;
-  transition: width 0.2s;
+.mks-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--mks-bg);
+}
+
+.wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
-.logo-bar {
-  height: 56px; display: flex; align-items: center; justify-content: center; gap: 8px;
-  color: #fff; background: #17222e;
+
+/* 横向布局的 60px 头行 */
+.header-row {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: var(--mks-nav-h);
+  background: var(--mks-primary);
 }
-.logo { width: 30px; height: 30px; border-radius: 8px; background: #409eff; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-.title { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
-.aside :deep(.el-menu) { border-right: none; }
-.header {
-  height: 56px; display: flex; align-items: center; justify-content: space-between;
-  background: #fff; border-bottom: 1px solid #e4e7ed;
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--mks-bg);
 }
-.left { display: flex; align-items: center; gap: 12px; }
-.collapse-btn { font-size: 20px; cursor: pointer; }
-.right { display: flex; align-items: center; }
-.user { display: flex; align-items: center; gap: 8px; cursor: pointer; outline: none; }
-.name { font-size: 14px; color: #303133; }
-.avatar { background: #409eff; color: #fff; font-weight: 600; }
-.main { padding: 0; background: #f5f7fa; overflow: auto; }
+/* 内容区滚动，页脚始终贴底（对方 main 与 footer 分离的结构） */
+.app-main-inner {
+  flex: 1;
+  min-height: 0;
+  padding: var(--mks-main-pad);
+  overflow: auto;
+}
+
+/* 页脚：55px 白底条（对方 footer bg=rgb(255,255,255)，之前透明压在灰底上） */
+.mks-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--mks-footer-h);
+  margin: 0 calc(-1 * var(--mks-main-pad)) calc(-1 * var(--mks-main-pad));
+  padding: 0 var(--mks-main-pad);
+  font-size: var(--mks-font-size);
+  color: var(--mks-text-footer);
+  background: var(--mks-bg-white);
+  border-top: 1px solid var(--mks-border-light);
+}
 </style>
