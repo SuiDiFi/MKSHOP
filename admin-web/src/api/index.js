@@ -149,6 +149,13 @@ export const priceReadyTypeList = () => mksRequest('/admin/price_ready/type_list
 export const priceReadyModify = (id, field, value) =>
   mksRequest(`/admin/price_ready/modify/${id}`, 'POST', {}, { field, value });
 
+// ─── 售后/投诉管理（M7 对齐 KASUSHOU 投诉管理）───
+export const complainIndex = (params) => mksRequest('/admin/complain/index', 'GET', params);
+export const complainRead = (id) => mksRequest(`/admin/complain/read/${id}`);
+export const complainDual = (id, data) => mksRequest(`/admin/complain/dual/${id}`, 'POST', {}, data);
+export const complainTypeList = () => mksRequest('/admin/complain/type_list', 'GET');
+export const complainExport = exportCsv;
+
 // ─── 订单管理（M2）───
 export const orderIndex = (params) => mksRequest('/admin/order/index', 'GET', params);
 export const orderInfo = (id) => mksRequest(`/admin/order/info/${id}`);

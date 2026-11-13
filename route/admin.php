@@ -150,6 +150,12 @@ Route::group('admin', function () {
         Route::post('order/do_get_order', 'admin.OrderController/do_get_order'); // 后台补单
         Route::post('order/no_bu_order', 'admin.OrderController/no_bu_order');   // 停止补单
         Route::get('order/export', 'admin.OrderController/export');              // M7 订单导出 CSV
+        // 售后/投诉管理（M7 对齐 KASUSHOU 投诉管理）
+        Route::get('complain/index', 'admin.ComplainController/index');
+        Route::get('complain/read/:id', 'admin.ComplainController/read');
+        Route::post('complain/dual/:id', 'admin.ComplainController/dual');
+        Route::get('complain/export', 'admin.ComplainController/export');
+        Route::get('complain/type_list', 'admin.ComplainController/type_list');
 
         // 对接渠道（权限点 docking/*；M3 上游 v2api）
         Route::get('docking/index', 'admin.DockingController/index');
