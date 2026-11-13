@@ -133,3 +133,15 @@
 6. 页签角标不随筛选联动（`status_counts` 只按近 30 天口径），需把 where DSL 复用进聚合查询。
 7. 表格空态插画目前只在订单/商品接入，其余页面仍是 EP 默认文字。
 
+### 5.4 第三轮：部署后截图复查的两处视觉缺陷
+
+| 缺陷 | 根因 | 修法 | 复验证据 |
+| --- | --- | --- | --- |
+| 查询区中文标签被压成逐字竖排（"订单号"→订/单/号） | `mksQueryForm` 写了 `label-width="0"`，EP 标签盒宽度归零后按 min-content 折行 | 删掉该属性，标签交回 EP 自适应宽度，并补 `:deep(.el-form-item__label){white-space:nowrap}` | 订单页 5 个标签 `h=32`（单行）、`w=54~68`；商品页 5 个标签同 |
+| 状态页签的数量角标掉到第二行 | `.el-tabs__item` 是 flex 项，标签与数量同处 `.tab-lab` 却无排版约束，被挤压时换行 | `.tab-lab` 显式 `inline-flex + align-items:center + white-space:nowrap` | 订单 4 个 + 商品 10 个页签全部 `countTop === labTop`、`h=40` |
+
+* 部署方式改为**原子切换**：新产物先落 `public/admin-web.next`，校验 `index.html`+`assets/` 齐全后 `mv` 换目录并保留 `admin-web.bak-<ts>` 备份，失败即中止不动线上。
+* 顺带解决遗留项「旧 hash chunk 累积」：服务器 `admin-web/assets` 曾累积到 **426 个文件**，切换后收敛为本次构建的 76 个。
+* 本轮浏览器实测 0 应用侧 console error，17 个 XHR/fetch 全 200。
+
+

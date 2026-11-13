@@ -1,6 +1,7 @@
 <template>
   <div class="mks-query-form">
-    <el-form :model="model" inline label-width="0" @submit.prevent>
+    <!-- 不设 label-width=0：那会把标签宽度压成 0，导致中文标签逐字竖排 -->
+    <el-form :model="model" inline @submit.prevent>
       <!-- 常显筛选项（建议 ≤5 个，与 KASUSHOU 默认折叠态一致） -->
       <slot name="short" />
 
@@ -55,6 +56,11 @@ const hasMore = computed(() => !!slots.more);
 .mks-query-form :deep(.el-form-item) {
   margin-right: 12px;
   margin-bottom: 16px;
+}
+.mks-query-form :deep(.el-form-item__label) {
+  /* 标签不折行（对方查询区标签都是单行） */
+  white-space: nowrap;
+  color: var(--mks-text-secondary);
 }
 .btn-ico {
   margin-right: 4px;

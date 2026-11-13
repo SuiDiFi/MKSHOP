@@ -58,6 +58,12 @@ const emit = defineEmits(['update:modelValue', 'update:pillValue']);
   line-height: 40px;
   font-size: var(--mks-font-size);
 }
+.tab-lab {
+  /* 标签与数量必须同排：页签是 flex 项，被挤压时数量会掉到第二行 */
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
 .tab-count {
   margin-left: 4px;
   color: var(--mks-text-placeholder);
