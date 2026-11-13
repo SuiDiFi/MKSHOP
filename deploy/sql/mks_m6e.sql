@@ -40,16 +40,14 @@ REPLACE INTO `mks_sys_dict` (`dict_type`,`code`,`label`,`sort`) VALUES
   ('mp_login_mode','both','两者都支持',3);
 
 -- ---------------------------------------------------------------------------
--- 3. 平台后台菜单（挂到「系统设置」分组，与插件管理菜单同级）
+-- 3. 平台后台菜单（挂到「设置 → 基础设置」分组，与通用/安全设置同级）
 -- ---------------------------------------------------------------------------
 INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
-SELECT r.parentId, '小程序配置', 87, 'MksMiniprogramConfig', 'miniprogram', 'cellphone', '@/views/setting/miniprogram', 1, '', '', 0
-FROM `mks_admin_router` r
-WHERE r.`name` = 'MksDictList' AND r.`auth_type` = 1
-  AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksMiniprogramConfig' LIMIT 1) x)
-LIMIT 1;
+SELECT 56, '小程序配置', 87, 'MksMiniprogramConfig', 'miniprogram', 'cellphone', '@/views/setting/miniprogram', 1, '', '', 0
+WHERE EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `id` = 56 AND `auth_type` = 1 LIMIT 1) p)
+  AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksMiniprogramConfig' LIMIT 1) x);
 
--- 兜底：字典菜单不存在时挂到顶级
+-- 兜底：基础设置分组不存在时挂到顶级
 INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
 SELECT 0, '小程序配置', 87, 'MksMiniprogramConfig', 'miniprogram', 'cellphone', '@/views/setting/miniprogram', 1, '', '', 0
 WHERE NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksMiniprogramConfig' LIMIT 1) x);
