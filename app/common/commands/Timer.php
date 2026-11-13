@@ -15,6 +15,7 @@ namespace app\common\commands;
 use app\common\model\SysTimer;
 use app\common\service\DockBuService;
 use app\common\service\DockSyncService;
+use app\common\service\StaticsService;
 use think\console\Command;
 use think\console\Input;
 use think\console\Output;
@@ -70,6 +71,11 @@ class Timer extends Command
                 $member = \app\common\service\MoneyDayService::generate($date);
                 $channel = \app\common\service\MoneyDayService::generateChannel($date);
                 return sprintf('date=%s,member=%d,channel=%d', $date, $member, $channel);
+            },
+            // 按日成交汇总物化（M8：回算近 10 天写 mks_statics，供长区间图表读取）
+            'statics_order' => function () {
+                $count = StaticsService::aggregate(StaticsService::AGG_DAYS);
+                return sprintf('days=%d,until=%s', $count, date('Y-m-d'));
             },
         ];
 

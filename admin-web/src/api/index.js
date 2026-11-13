@@ -276,3 +276,15 @@ export const addonEnable = (id) => mksRequest('/admin/addon/enable', 'POST', {},
 export const addonDisable = (id) => mksRequest('/admin/addon/disable', 'POST', {}, { id });
 export const addonUninstall = (id, dropData = 0) => mksRequest('/admin/addon/uninstall', 'POST', {}, { id, drop_data: dropData });
 export const addonConfigSave = (id, form) => mksRequest('/admin/addon/config_save', 'POST', {}, { id, form });
+
+// ─── M8 运营统计（接口名对齐 KASUSHOU api_url）───
+export const indexStatics = () => mksRequest('/admin/index_statics', 'GET');
+export const buyStatics = (params) => mksRequest('/admin/buy_statics', 'GET', params);
+export const buyStaticsTrend = (params) => mksRequest('/admin/buy_statics_trend', 'GET', params);
+export const buyStaticsToday = () => mksRequest('/admin/buy_statics_today', 'GET');
+export const goodsStatics = (params) => mksRequest('/admin/goods_statics', 'GET', params);
+export const goodsStaticsList = (params) => mksRequest('/admin/goods_statics_list', 'GET', params);
+export const goodsStaticsTrend = (params) => mksRequest('/admin/goods_statics_trend', 'GET', params);
+export const userStatics = (params) => mksRequest('/admin/user_statics', 'GET', params);
+export const userStaticsTrend = (params) => mksRequest('/admin/user_statics_trend', 'GET', params);
+export const staticsAggregate = (data) => mksRequest('/admin/statics_aggregate', 'POST', {}, data);

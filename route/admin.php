@@ -271,6 +271,21 @@ Route::group('admin', function () {
         Route::post('addon/disable', 'admin.AddonController/disable');
         Route::post('addon/uninstall', 'admin.AddonController/uninstall');
         Route::post('addon/config_save', 'admin.AddonController/config_save');
+
+        // ── M8 运营统计 ──────────────────────────────────────
+        // 首页看板 / 交易分析 / 商品统计 / 用户统计（权限点已在种子登记：api_url 为根级串，故此处不带模块前缀）
+        // 规则值必须写完整控制器名 admin.StaticsController（与其它 M6+ 模块一致）
+        Route::get('index_statics', 'admin.StaticsController/indexStatics');
+        Route::get('buy_statics', 'admin.StaticsController/buyStatics');
+        Route::get('buy_statics_trend', 'admin.StaticsController/buyStaticsTrend');
+        Route::get('buy_statics_today', 'admin.StaticsController/buyStaticsToday');
+        Route::get('goods_statics', 'admin.StaticsController/goodsStatics');
+        Route::get('goods_statics_list', 'admin.StaticsController/goodsStaticsList');
+        Route::get('goods_statics_trend', 'admin.StaticsController/goodsStaticsTrend');
+        Route::get('user_statics', 'admin.StaticsController/userStatics');
+        Route::get('user_statics_trend', 'admin.StaticsController/userStaticsTrend');
+        // 物化表手动回算（权限点 statics_aggregate，M8 新增登记）
+        Route::post('statics_aggregate', 'admin.StaticsController/aggregate');
     })->middleware([
         \mks\middleware\AdminToken::class,
         \mks\middleware\AdminAuth::class,
