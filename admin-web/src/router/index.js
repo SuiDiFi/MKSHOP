@@ -39,14 +39,23 @@ export const router = createRouter({
 // 视图组件映射（菜单 component 字段 '@/views/xxx' → 实际组件；未实现页面落到占位符）
 const viewModules = import.meta.glob('../views/**/*.vue');
 
-export function resolveView(componentPath) {
+// 菜单 component 字段 '@/views/xxx' → 视图模块键；null 表示该页尚未实现
+function viewKey(componentPath) {
   if (!componentPath) return null;
-  let p = String(componentPath).replace(/^@\//, '').replace(/\/+$/, '');
-  const direct = viewModules[`../${p}.vue`];
-  if (direct) return direct;
-  const idx = viewModules[`../${p}/index.vue`];
-  if (idx) return idx;
-  return () => import('@/views/placeholder.vue');
+  const p = String(componentPath).replace(/^@\//, '').replace(/\/+$/, '');
+  if (viewModules[`../${p}.vue`]) return `../${p}.vue`;
+  if (viewModules[`../${p}/index.vue`]) return `../${p}/index.vue`;
+  return null;
+}
+
+export function resolveView(componentPath) {
+  const key = viewKey(componentPath);
+  return key ? viewModules[key] : () => import('@/views/placeholder.vue');
+}
+
+// 同 path 竞争时的优先级：组件已实现 > 菜单可见
+function rank(node) {
+  return (viewKey(node.component) ? 2 : 0) + (Number(node.hidden) === 1 ? 0 : 1);
 }
 
 /**
@@ -56,38 +65,47 @@ export function resolveView(componentPath) {
 export function registerDynamicRoutes(menus) {
   const added = [];
   const pathMap = {}; // menuId → 完整路由路径（供侧边栏 el-menu router 定位）
+  const pending = new Map(); // selfPath → 择优后占用该 path 的菜单节点
 
-  function build(nodes, parentPath) {
+  function collect(nodes, parentPath) {
     for (const node of nodes) {
       const children = node.children || [];
+      // 父级可能是首页容器（path='/'），拼接后必须折叠重复斜杠，否则注册成 //index
       const selfPath = node.path?.startsWith('/')
         ? node.path
-        : `${parentPath}/${node.path || ''}`.replace(/\/+$/, '') || parentPath;
+        : `${parentPath}/${node.path || ''}`.replace(/\/{2,}/g, '/').replace(/\/+$/, '') || parentPath;
 
       if (node.component && node.component !== 'Layout' && node.path) {
-        const view = resolveView(node.component);
         pathMap[node.id] = selfPath;
-        const route = {
-          path: selfPath,
-          name: `M${node.id}`,
-          component: view,
-          meta: {
-            title: node.title || node.name,
-            icon: node.icon,
-            menuId: node.id,
-            // 标签页行为对齐 KASUSHOU：首页不可关闭；隐藏页（编辑页等）不入标签
-            noClosable: Number(node.noClosable) === 1 || node.name === 'Index',
-            tabHidden: Number(node.hidden) === 1 || Number(node.tabHidden) === 1,
-          },
-        };
-        router.addRoute('Layout', route);
-        added.push(route);
+        const prev = pending.get(selfPath);
+        // 菜单表存在同 path 的遗留行（component 指向未实现视图、或本身是 hidden 副本）；
+        // 若不择优，遗留行会先注册并把真实页面遮成占位符、或让页签标题与侧栏不一致。
+        if (!prev || rank(node) > rank(prev)) pending.set(selfPath, node);
       }
-      if (children.length > 0) build(children, selfPath);
+      if (children.length > 0) collect(children, selfPath);
     }
   }
 
-  build(menus || [], '');
+  collect(menus || [], '');
+
+  for (const [selfPath, node] of pending) {
+    const route = {
+      path: selfPath,
+      name: `M${node.id}`,
+      component: resolveView(node.component),
+      meta: {
+        title: node.title || node.name,
+        icon: node.icon,
+        menuId: node.id,
+        // 标签页行为对齐 KASUSHOU：首页不可关闭；隐藏页（编辑页等）不入标签
+        noClosable: Number(node.noClosable) === 1 || node.name === 'Index',
+        tabHidden: Number(node.hidden) === 1 || Number(node.tabHidden) === 1,
+      },
+    };
+    router.addRoute('Layout', route);
+    added.push(route);
+  }
+
   import('@/store/user').then(({ useUserStore }) => {
     useUserStore().menuPathMap = pathMap;
   });

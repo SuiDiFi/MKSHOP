@@ -128,10 +128,10 @@
 1. 布局只有 4 套（缺 `common` 常规 / `float` 浮动）。
 2. 编辑载体未铺开：1000px 详情抽屉 + 多 tab、复杂实体独立页 + 页内 tab + 下一步/保存（当前仍是 dialog 为主）。
 3. 右下角悬浮客服/AI 60×60 未做。
-4. 其余 20+ 列表页尚未套用 `mksPage` 范式（目前只有订单/商品两页）；表格内“数字即快捷操作 + 复制图标”未铺开。
+4. ~~其余 20+ 列表页尚未套用 `mksPage` 范式（目前只有订单/商品两页）~~ → 见 §5.5，已铺开 23 页；表格内“数字即快捷操作 + 复制图标”仍未铺开。
 5. 通知 popover 的「消息/系统公告」仍是空态，等 notice 模块（死表 `mks_notice`/`mks_email`）接入。
 6. 页签角标不随筛选联动（`status_counts` 只按近 30 天口径），需把 where DSL 复用进聚合查询。
-7. 表格空态插画目前只在订单/商品接入，其余页面仍是 EP 默认文字。
+7. ~~表格空态插画目前只在订单/商品接入~~ → 随 §5.5 全量列表页已接 `mks-empty`。
 
 ### 5.4 第三轮：部署后截图复查的两处视觉缺陷
 
@@ -143,5 +143,47 @@
 * 部署方式改为**原子切换**：新产物先落 `public/admin-web.next`，校验 `index.html`+`assets/` 齐全后 `mv` 换目录并保留 `admin-web.bak-<ts>` 备份，失败即中止不动线上。
 * 顺带解决遗留项「旧 hash chunk 累积」：服务器 `admin-web/assets` 曾累积到 **426 个文件**，切换后收敛为本次构建的 76 个。
 * 本轮浏览器实测 0 应用侧 console error，17 个 XHR/fetch 全 200。
+
+### 5.5 第四轮：`mksPage` 列表页范式铺开到全站（§5.3 第 4 项关闭）
+
+统一骨架：`mks-page` → `#alert`（引导条 + 快捷入口内链）→ `#query`（`mks-query-form`，≤5 项常显、其余 `#more` 折叠）→ 卡片内 `#status`（`mks-status-tabs`）→ `#toolbar` → 表格（`#empty` 用 `mks-empty`）→ `#pager`。分页统一 `layout="total, sizes, prev, pager, next, jumper"` + `:page-sizes="[20,50,100,200,500,1000]"` + `v-model:page-size`，`limit` 基线 15 → 20，筛选空值统一 `''`（不再用 `null`）。
+
+已套用（25 页，`grep -rl "<mks-page>" views` 计数）：订单/商品（第二轮）+ `finance/moneyDay`·`dockingDay`·`withdrawRecord`、`member/memberList`·`memberLevel`·`commissionList`·`userPriceTpl`、`goods/categoryList`·`goodsTpl`·`goodsTags`·`dockingList`·`priceReady`·`cardStockManagement`、`order/complainList`、`setting/dict`·`task`·`userManagement/menuList`·`roleList`·`userList`、`vip/vipList`、`diy/diyList`、`merchant/merchantList`、`setting/addonList`。
+
+三条实施中定下来的规则：
+
+| 场景 | 处理 | 原因 |
+| --- | --- | --- |
+| 一个页面切多个独立数据源（卡密库/卡密/导卡历史、管理员/操作日志/登录日志） | `#status` 放页签，default 用 `<template v-if>` 分支，分页退回 `<div class="pager">` | `v-slot` 不能嵌在 `<template v-if>` 内；`.toolbar`/`.pager` 在 `main.css` 已是全局类 |
+| 页签切换数据源 vs 页签做状态筛选 | 前者 `paneTabs`（值=tab 名），后者 `statusTabs`（值=where 字段值） | 避免把「视图切换」误当筛选传给 `buildWhere` |
+| 筛选只对某个页签生效（`userList` 的账号/状态只管管理员列表） | `mks-query-form` 上加 `v-if="tab === 'list'"` | 否则日志页签下出现一排无效筛选 |
+
+* 快捷入口的内链目标不靠猜：从开发库 `mks_admin_router` 导出 `path`+`component` 对照表逐条核对（子级 `path` 是相对段，需按 parentId 逐级拼接，如 `/setting/usermanagement/dict`）。已用 12 个目标全部命中，未注册路径会掉进 `placeholder.vue`。
+* 仍保留 `page-card` 的只剩首页工作台与 3 个分析页（非列表页）+ `placeholder`，不在本范式范围内。
+
+### 5.6 第五轮：mksup.top 部署后全站路由实测，修掉「菜单遗留行遮蔽真实页面」
+
+部署产物 `assets/index-C40KmQVq.js`（原子切换，备份 `admin-web.bak-20261113235448`），浏览器直读 `router.getRoutes()` + 逐页探针验收。
+
+**发现的缺陷不是页面写的，而是路由注册被菜单脏数据遮蔽**（3 个已实现页打开是「排期中」占位符）：
+
+| 现象 | 根因 | 修法 |
+| --- | --- | --- |
+| `/finance/moneyday`、`/goods/pricereadydata` 显示占位符 | `mks_admin_router` 同 path 两行：遗留行（id 428/13，`hidden=1`，component 写成 `finance/moneyday`、`goods/priceReadyData` —— 仓库里根本没有这些文件）先注册，Vue Router 先注册者胜，把新行（651/600）的真实组件遮掉 | 前端：`registerDynamicRoutes` 改为**先收集再按 path 择优注册**（组件已实现 2 分 > 未实现 0 分，可见 1 分 > hidden 0 分）；数据：`mks_m8d.sql` 把遗留行 component 改指真实视图 |
+| `/order/complain` 占位符，另有一个游离顶级「售后」 | 订单组内 id 25 指向从未实现的 `order/orderComplain`；我们补的页面挂在首页容器下成 id 611（`/complain`） | `mks_m8d.sql`：id 25 改指 `@/views/order/complainList`，id 611 软删 —— 菜单只保留订单组那一条 |
+| 面包屑出现遗留行旧标题（财务对账管理）、侧栏却是「财务对账」 | `breadcrumbOf` 精确匹配取第一条，hidden 遗留行插在前面 | 同 path 候选按 `hidden` 排序择优先取可见行 |
+| 6 条路由注册成 `//index`、`//vip`、`//commission`、`//goods_analysis` 等 | `registerDynamicRoutes` 拼父路径时，父级是首页容器 `path='/'`，得到 `//xxx`；靠 Vue Router 归一化才勉强能跳（`utils/menu.js` 的 `joinPath` 早就折叠了重复斜杠，两边规则不一致） | 拼接后 `.replace(/\/{2,}/g,'/')`，与 `joinPath` 对齐 |
+
+复验（全部浏览器实测，非静态检查）：
+
+* `getRoutes()` 92 条：`path.includes('//')` **0 条**、同 path 重复注册 **0 条**。
+* 「可见 + 组件已实现」的 33 条菜单路径逐条 resolve：**缺失 0**；moneyday/pricereadydata/order-complain 的 `meta.menuId` 分别是 **651 / 600 / 25**（可见行胜出），标题与侧栏一致。
+* 上述 3 页 + `/index`·`/vip`·3 个分析页·`/service/workbench` 渲染真实组件，`placeholder=false`；moneyday 面包屑 `财务 > 财务对账`。
+* 33 页范式体检沿用第四轮指标：`guide=1`、`mksCard=1`、竖排标签 **0**、掉行角标 **0**、分页含 `sizes`+`jumper`。`finance/moneyDay` 无分页属设计（按日聚合、无 page/limit 状态）。
+* 当前构建 console **0 error / 0 warn**，74 个 script/xhr/fetch 全 200。
+* 全站 `component` 对照视图文件名的审计脚本（`parentId` 逐级拼 path → 比对 `views/**`）留在临时目录，未入库；结果显示其余 50+ 条指向不存在视图的菜单是**有意为之**：它们是 KASUSHOU 原始菜单里我们尚未实现的功能，按约定落到 `placeholder.vue`。
+
+部署副作用记录：原子切换会删掉旧 `assets/`，切换瞬间仍开着的旧页面在懒加载时拿到 404（本次实测到 35 条 `Failed to fetch dynamically imported module`，全部来自切换前的那个会话，刷新即愈）。若后续要消除，得保留上一版 assets 目录一段时间。
+
 
 

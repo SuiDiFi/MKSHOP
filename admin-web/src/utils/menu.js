@@ -53,7 +53,10 @@ export function navMenus(menus) {
 export function breadcrumbOf(routePath, menus, pathMap) {
   const flat = flattenMenus(menus);
   // 精确匹配优先，其次取最长前缀匹配（/goods/list/edit/:id → /goods/list）
-  let hit = flat.find((f) => f.fullPath === routePath);
+  // 同 path 多菜单行时取可见行，否则面包屑会用遗留行的旧标题
+  let hit = flat
+    .filter((f) => f.fullPath === routePath)
+    .sort((a, b) => Number(!!a.node.hidden) - Number(!!b.node.hidden))[0];
   if (!hit) {
     const cands = flat
       .filter((f) => routePath.startsWith(f.fullPath + '/'))
