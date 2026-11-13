@@ -10,6 +10,7 @@ set -e
 
 DOMAIN="mksup.top"
 ALT_DOMAIN="www.mksup.top"
+VIP_DOMAIN="vip.mksup.top"
 SERVER_IP="154.222.25.115"
 WEBROOT="/var/www/acme"
 CERTDIR="/etc/nginx/ssl/${DOMAIN}"
@@ -69,6 +70,11 @@ if resolve_ok "${ALT_DOMAIN}"; then
     DOMAINS="${DOMAINS} -d ${ALT_DOMAIN}"
 else
     echo "提示: ${ALT_DOMAIN} 未解析到本机，本次只签发 ${DOMAIN}"
+fi
+if resolve_ok "${VIP_DOMAIN}"; then
+    DOMAINS="${DOMAINS} -d ${VIP_DOMAIN}"
+else
+    echo "提示: ${VIP_DOMAIN} 未解析到本机，本次不签发该子域"
 fi
 
 echo "[4/5] 通过 webroot 签发 Let's Encrypt 证书"
