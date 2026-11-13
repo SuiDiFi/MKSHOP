@@ -29,6 +29,19 @@ class OrderController extends Base
         'goods_name'   => 'like',
         'recharge_account' => 'like',
         'docking_id'   => 'eq',
+        // M7 对齐 KASUSHOU 订单列表筛选颗粒度
+        'create_time'   => 'between',
+        'finish_time'   => 'between',
+        'pay_time'      => 'between',
+        'user_where'    => 'eq',
+        'goods_type'    => 'eq',
+        'supplier_id'   => 'eq',
+        'vip_id'        => 'eq',
+        'total_price'   => 'between',
+        'cost_value'    => 'between',
+        'is_fail'       => 'eq',
+        'has_back_money' => 'gt',
+        'quantity'      => 'eq',
     ];
 
     protected array $crudModifiable = ['admin_mark', 'recharge_hints'];
@@ -40,7 +53,7 @@ class OrderController extends Base
     protected array $crudOrderable = ['id', 'create_time', 'total_price', 'pay_time'];
 
     /**
-     * 列表：状态文案映射补充
+     * 列表：状态文案映射补充（对齐 KASUSHOU 状态页签文案）
      */
     public function index()
     {
@@ -53,10 +66,44 @@ class OrderController extends Base
         $list = (array) ($data['data']['list'] ?? []);
         foreach ($list as &$row) {
             $row['status_text'] = $statusText[(int) ($row['status'] ?? 0)] ?? (string) $row['status'];
+            // 异常订单标记（KASUSHOU「异常订单」页签语义）
+            $row['is_fail_text'] = (int) ($row['is_fail'] ?? 0) === 1 ? '异常' : '';
+            // 部分退款标记：有回款且未走完退款流程
+            $row['is_part_back'] = (float) ($row['has_back_money'] ?? 0) > 0
+                && bccomp((string) ($row['has_back_money'] ?? '0'), (string) ($row['total_price'] ?? '0'), 4) < 0 ? 1 : 0;
         }
         unset($row);
         $data['data']['list'] = $list;
         return json_ok($data['data'], $data['msg']);
+    }
+
+    /**
+     * 订单导出（对齐 KASUSHOU「导出订单」）：CSV，最多 5000 行
+     * GET 参数与 index 一致（where/page 忽略，按条件全量取前 5000 条）
+     */
+    public function export()
+    {
+        $rows = $this->crudQuery(new Order())
+            ->limit(5000)
+            ->select()
+            ->toArray();
+        $statusText = [
+            -1 => '取消支付', 0 => '等待支付', 1 => '等待处理', 2 => '正在处理',
+            3 => '交易成功', 4 => '取消交易', 5 => '已经退款',
+        ];
+        $header = ['ID', '订单号', '状态', '商品名称', '下单参数', '数量', '单价', '总价', '成本', '利润',
+            '买家', '用户ID', '支付方式', '下单来源', '供货商', '分站ID', '下单IP', '下单时间', '支付时间', '完成时间'];
+        return response_csv('orders_' . date('Ymd_His') . '.csv', $header, array_map(function ($r) use ($statusText) {
+            return [
+                $r['id'], $r['ordersn'], $statusText[(int) $r['status']] ?? (string) $r['status'],
+                $r['goods_name'], (string) $r['recharge_account'], $r['quantity'], $r['price'], $r['total_price'],
+                $r['cost_value'], $r['order_price'], $r['nickname'], $r['uid'], $r['pay_type'],
+                (string) $r['user_where'], (string) $r['supplier_name'], $r['vip_id'], (string) $r['ip'],
+                date('Y-m-d H:i:s', (int) $r['create_time']),
+                (int) $r['pay_time'] > 0 ? date('Y-m-d H:i:s', (int) $r['pay_time']) : '',
+                (int) $r['finish_time'] > 0 ? date('Y-m-d H:i:s', (int) $r['finish_time']) : '',
+            ];
+        }, $rows));
     }
 
     /**

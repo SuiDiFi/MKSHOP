@@ -31,6 +31,16 @@ class GoodsController extends Base
         'check_status' => 'eq',
         'uid'          => 'eq',
         'tags_id'      => 'eq',
+        // M7 对齐 KASUSHOU 商品列表筛选颗粒度
+        'spec_type'      => 'eq',
+        'goods_price_id' => 'eq',
+        'only_balance'   => 'eq',
+        'need_balance'   => 'eq',
+        'vip_id'         => 'eq',
+        'cost_value'     => 'between',
+        'real_price'     => 'between',
+        'create_time'    => 'between',
+        'docking_goods_id' => 'eq',
     ];
 
     protected array $crudModifiable = [
@@ -54,11 +64,14 @@ class GoodsController extends Base
 
     /**
      * 列表补充：分类名/品牌名映射（前端渲染用）
+     * 支持 category_id 特例：FIND_IN_SET 精确匹配逗号分隔的分类串（对齐 KASUSHOU 商品分类筛选）
      */
     public function index()
     {
-        $result = $this->crudIndex();
-        $data   = $result->getData();
+        $categoryId = (int) $this->request->param('category_id', 0);
+        $data = $categoryId > 0
+            ? ['data' => $this->pagedWithCategory($categoryId), 'msg' => 'ok']
+            : $this->crudIndex()->getData();
         $list   = (array) ($data['data']['list'] ?? []);
         if ($list !== []) {
             $catIds = [];
@@ -86,6 +99,59 @@ class GoodsController extends Base
         }
         $data['data']['list'] = $list;
         return json_ok($data['data'], $data['msg']);
+    }
+
+    /**
+     * 分类精确筛选分页（FIND_IN_SET；仅分类筛选时走此分支，避免 like 误匹配多级 ID）
+     */
+    protected function pagedWithCategory(int $categoryId): array
+    {
+        $page  = max(1, (int) $this->request->param('page', 1));
+        $limit = min(200, max(1, (int) $this->request->param('limit', 15)));
+        $query = $this->crudQuery($this->crudModel())
+            ->whereRaw('FIND_IN_SET(' . $categoryId . ', category_ids)');
+        $total = (clone $query)->count();
+        $list  = $query->page($page, $limit)->select()->toArray();
+        return ['list' => $list, 'count' => $total];
+    }
+
+    /**
+     * 商品导出（对齐 KASUSHOU「导出」）：CSV，最多 5000 行
+     */
+    public function export()
+    {
+        $categoryId = (int) $this->request->param('category_id', 0);
+        $query = $this->crudQuery(new Goods());
+        if ($categoryId > 0) {
+            $query = $query->whereRaw('FIND_IN_SET(' . $categoryId . ', category_ids)');
+        }
+        $rows = $query->limit(5000)->select()->toArray();
+        $typeMap = [1 => '卡密', 2 => '手工', 3 => '自动', 4 => '实物'];
+        // 导出行做分类/品牌名映射（原始行只有 ID 串）
+        $catIds = $tagIds = [];
+        foreach ($rows as $r) {
+            foreach (explode(',', (string) ($r['category_ids'] ?? '')) as $cid) {
+                if ((int) $cid > 0) $catIds[] = (int) $cid;
+            }
+            if ((int) ($r['tags_id'] ?? 0) > 0) $tagIds[] = (int) $r['tags_id'];
+        }
+        $catMap = $catIds === [] ? [] : GoodsCategory::whereIn('id', array_unique($catIds))->column('name', 'id');
+        $tagMap = $tagIds === [] ? [] : GoodsTags::whereIn('id', array_unique($tagIds))->column('name', 'id');
+        $header = ['商品ID', '商品编号', '商品名称', '分类', '品牌', '类型', '供货方式', '定价成本', '面值',
+            '售价', '库存', '销量', '所属供货商ID', '分站ID', '状态', '创建时间'];
+        return response_csv('goods_' . date('Ymd_His') . '.csv', $header, array_map(function ($r) use ($typeMap, $catMap, $tagMap) {
+            $cats = implode('、', array_map(
+                fn ($cid) => (string) ($catMap[(int) $cid] ?? ''),
+                array_filter(explode(',', (string) ($r['category_ids'] ?? '')), fn ($v) => (int) $v > 0)
+            ));
+            return [
+                $r['id'], (string) $r['goods_no'], $r['goods_name'], $cats,
+                (string) ($tagMap[(int) ($r['tags_id'] ?? 0)] ?? ''), $typeMap[(int) $r['goods_type']] ?? (string) $r['goods_type'],
+                (string) $r['provide_type'], $r['cost_value'], $r['face_value'], $r['real_price'],
+                $r['stock_num'], $r['sales_num'], $r['uid'], $r['vip_id'], (string) $r['status'],
+                date('Y-m-d H:i:s', (int) $r['create_time']),
+            ];
+        }, $rows));
     }
 
     /**

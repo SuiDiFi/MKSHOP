@@ -1,4 +1,26 @@
 import { mksRequest } from '@/utils/request';
+import service from '@/utils/request';
+
+/**
+ * CSV 导出（blob 下载）
+ * @param {string} path 后台接口路径（如 /admin/order/export）
+ * @param {object} params 查询参数（与列表一致）
+ * @param {string} filename 下载文件名
+ */
+export async function exportCsv(path, params = {}, filename = 'export.csv') {
+  const res = await service.request({
+    url: '/index.php',
+    method: 'GET',
+    params: { ...params, s: path },
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(res.data || res);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 /** 后台登录 */
 export const login = (username, password) =>

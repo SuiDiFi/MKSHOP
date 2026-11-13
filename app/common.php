@@ -70,3 +70,29 @@ if (!function_exists('throw_fail')) {
         throw new \mks\exception\BizException($msg, $code);
     }
 }
+
+if (!function_exists('response_csv')) {
+    /**
+     * CSV 下载响应（带 BOM，Excel 直开不乱码）
+     * @param string $filename 下载文件名
+     * @param array  $header   表头（一维数组）
+     * @param array  $rows     数据行（二维数组）
+     */
+    function response_csv(string $filename, array $header, array $rows): \think\Response
+    {
+        $fp = fopen('php://temp', 'r+');
+        fwrite($fp, "\xEF\xBB\xBF");
+        fputcsv($fp, $header);
+        foreach ($rows as $row) {
+            fputcsv($fp, array_map(fn ($v) => (string) ($v ?? ''), array_values($row)));
+        }
+        rewind($fp);
+        $csv = (string) stream_get_contents($fp);
+        fclose($fp);
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . rawurlencode($filename) . '"',
+            'Cache-Control'       => 'no-store',
+        ]);
+    }
+}

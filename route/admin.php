@@ -90,6 +90,7 @@ Route::group('admin', function () {
         Route::post('goods/sort', 'admin.GoodsController/sort');
         Route::post('goods/save_goods_stock', 'admin.GoodsController/save_goods_stock');
         Route::post('goods/status_type', 'admin.GoodsController/status_type');
+        Route::get('goods/export', 'admin.GoodsController/export');              // M7 商品导出 CSV
         Route::post('goods/goods_type', 'admin.GoodsController/goods_type');
         Route::post('goods/provide_type', 'admin.GoodsController/provide_type');
         Route::post('goods/default_tags_list', 'admin.GoodsController/default_tags_list');
@@ -136,6 +137,7 @@ Route::group('admin', function () {
         Route::post('order/sync_order/:id', 'admin.OrderController/sync_order');
         Route::post('order/do_get_order', 'admin.OrderController/do_get_order'); // 后台补单
         Route::post('order/no_bu_order', 'admin.OrderController/no_bu_order');   // 停止补单
+        Route::get('order/export', 'admin.OrderController/export');              // M7 订单导出 CSV
 
         // 对接渠道（权限点 docking/*；M3 上游 v2api）
         Route::get('docking/index', 'admin.DockingController/index');
