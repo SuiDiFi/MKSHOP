@@ -1,16 +1,27 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-input v-model="query.keyword" placeholder="模板名称" clearable style="width: 200px" @keyup.enter="doSearch" />
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="openForm()">添加参数模板</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      参数模板决定商品下单时要求买家额外填写的输入项；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/list')">商品列表</a>·
+      <a class="quick-link" @click="goCfg('/goods/category')">商品分类</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="模板名称">
+            <el-input v-model="query.keyword" placeholder="模板名称" clearable style="width: 200px" @keyup.enter="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">添加参数模板</el-button>
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有参数模板" hint="添加模板后，到商品编辑页勾选即可启用" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="模板名称" min-width="180" />
         <el-table-column label="输入项" min-width="240" show-overflow-tooltip>
@@ -37,11 +48,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <!-- 模板编辑弹窗：动态输入项（对齐 KASUSHOU「添加输入项」） -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑参数模板' : '添加参数模板'" width="720px" top="6vh">
@@ -65,19 +77,25 @@
         <el-button type="primary" :loading="saving" @click="doSave">确定</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { goodsTplIndex, goodsTplCreate, goodsTplSave, goodsTplDelete, goodsTplModify } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
 const list = ref([]);
 const total = ref(0);
-const query = reactive({ page: 1, limit: 15, keyword: '' });
+const query = reactive({ page: 1, limit: 20, keyword: '' });
 const formVisible = ref(false);
 const form = reactive({ id: 0, name: '', sort: 100, status: 1, inputs: [] });
 
@@ -162,5 +180,5 @@ onMounted(load);
 
 <style scoped>
 .tpl-row { display: flex; align-items: center; margin-bottom: 8px; }
-.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.quick-link { color: var(--mks-primary); cursor: pointer; }
 </style>

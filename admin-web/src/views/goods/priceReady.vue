@@ -1,19 +1,32 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-input v-model="query.keyword" placeholder="模板名称" clearable style="width: 200px" @keyup.enter="doSearch" />
-          <el-select v-model="query.type" placeholder="全部类型" clearable style="width: 150px" @change="doSearch">
-            <el-option v-for="t in typeOptions" :key="t.code" :label="t.label" :value="t.code" />
-          </el-select>
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="openForm()">添加定价模板</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      定价模板按「绑定商品 + 面值区间」决定售价，等级价格档优先于加价规则；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/list')">商品列表</a>·
+      <a class="quick-link" @click="goCfg('/goods/docking')">对接渠道</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="模板名称">
+            <el-input v-model="query.keyword" placeholder="模板名称" clearable style="width: 200px" @keyup.enter="doSearch" />
+          </el-form-item>
+          <el-form-item label="类型">
+            <el-select v-model="query.type" placeholder="全部类型" clearable style="width: 150px" @change="doSearch">
+              <el-option v-for="t in typeOptions" :key="t.code" :label="t.label" :value="t.code" />
+            </el-select>
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">添加定价模板</el-button>
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有定价模板" hint="添加模板并绑定商品后，该商品才参与取价" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="名称" min-width="180" />
         <el-table-column label="绑定商品" min-width="180">
@@ -50,11 +63,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑定价模板' : '添加定价模板'" width="640px" top="6vh">
       <el-form label-width="110px">
@@ -98,13 +112,19 @@
         <el-button type="primary" :loading="saving" @click="doSave">确定</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { priceReadyIndex, priceReadyCreate, priceReadySave, priceReadyDelete, priceReadyTypeList, priceReadyModify, goodsIndex } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -113,7 +133,7 @@ const total = ref(0);
 const typeOptions = ref([]);
 const goodsOptions = ref([]);
 const goodsLoading = ref(false);
-const query = reactive({ page: 1, limit: 15, keyword: '', type: null });
+const query = reactive({ page: 1, limit: 20, keyword: '', type: '' });
 const formVisible = ref(false);
 const form = reactive({ id: 0, name: '', goods_id: 0, type: 1, cha_price: 0, start_price: 0, end_price: 0, sort: 100, status: 1, priceRows: [] });
 
@@ -152,7 +172,7 @@ function doSearch() {
 
 function resetQuery() {
   query.keyword = '';
-  query.type = null;
+  query.type = '';
   doSearch();
 }
 
@@ -231,6 +251,6 @@ onMounted(async () => {
 
 <style scoped>
 .tpl-row { display: flex; align-items: center; margin-bottom: 8px; gap: 4px; }
-.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.quick-link { color: var(--mks-primary); cursor: pointer; }
 .muted { color: #909399; font-size: 12px; }
 </style>

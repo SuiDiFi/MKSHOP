@@ -1,126 +1,131 @@
 <template>
-  <div class="page-card">
-    <el-tabs v-model="activeTab" @tab-change="onTabChange">
-      <!-- ── 卡密库 ── -->
-      <el-tab-pane label="卡密库" name="cate">
-        <el-card shadow="never">
-          <template #header>
-            <div class="toolbar" style="margin-bottom: 0">
-              <el-button type="success" @click="openCateForm()">新增卡库</el-button>
-            </div>
-          </template>
-          <el-table :data="cateList" border v-loading="cateLoading">
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="name" label="卡库名称" min-width="180" />
-            <el-table-column label="卡密类型" width="110">
-              <template #default="{ row }">{{ cardTypeLabel(row.card_type) }}</template>
-            </el-table-column>
-            <el-table-column label="卡号/卡密别名" width="140">
-              <template #default="{ row }">{{ row.card_no_alias }} / {{ row.card_password_alias }}</template>
-            </el-table-column>
-            <el-table-column prop="card_num" label="库存" width="80">
-              <template #default="{ row }">
-                <span :style="{ color: row.warn_open && row.card_num <= row.warn ? '#f56c6c' : '' }">{{ row.card_num }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="cost" label="成本" width="90" />
-            <el-table-column label="状态" width="90">
-              <template #default="{ row }">
-                <el-switch v-model="row.status" :active-value="1" :inactive-value="0"
-                  @change="(v) => doCateModify(row, 'status', v)" />
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="220" fixed="right">
-              <template #default="{ row }">
-                <el-button link type="success" @click="openImport(row)">导入卡密</el-button>
-                <el-button link type="primary" @click="openCateForm(row)">编辑</el-button>
-                <el-button link type="warning" @click="doClearCate(row)">清空</el-button>
-                <el-popconfirm title="确定删除该卡库？" @confirm="doCateDelete(row.id)">
-                  <template #reference><el-button link type="danger">删除</el-button></template>
-                </el-popconfirm>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="cateTotal"
-              :page-size="cateQuery.limit" v-model:current-page="cateQuery.page" @current-change="loadCate" />
-          </div>
-        </el-card>
-      </el-tab-pane>
+  <mks-page>
+    <template #alert>
+      卡库是本地库存来源：商品绑定卡库后按「提取间隔」自动取卡发货，「导入卡密」按行去重入库；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/list')">商品列表</a>·
+      <a class="quick-link" @click="goCfg('/goods/docking')">对接渠道</a>
+    </template>
 
-      <!-- ── 卡密列表 ── -->
-      <el-tab-pane label="卡密列表" name="card">
-        <el-card shadow="never">
-          <template #header>
-            <div class="toolbar">
-              <el-select v-model="cardQuery.cateId" placeholder="全部卡库" clearable style="width: 200px" @change="loadCards">
-                <el-option v-for="c in cateOptions" :key="c.id" :label="c.name" :value="c.id" />
-              </el-select>
-              <el-select v-model="cardQuery.status" placeholder="全部状态" clearable style="width: 120px" @change="loadCards">
-                <el-option label="待售" :value="1" />
-                <el-option label="已售" :value="2" />
-                <el-option label="冻结" :value="3" />
-              </el-select>
-              <el-switch v-model="showFull" active-text="显示明文" @change="loadCards" />
-            </div>
-          </template>
-          <el-table :data="cardList" border v-loading="cardLoading">
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column label="卡号" min-width="160" show-overflow-tooltip>
-              <template #default="{ row }">{{ row.card_no || '—' }}</template>
-            </el-table-column>
-            <el-table-column label="卡密" min-width="180" show-overflow-tooltip>
-              <template #default="{ row }">{{ row.card_password || '—' }}</template>
-            </el-table-column>
-            <el-table-column label="卡库" width="150">
-              <template #default="{ row }">{{ cateName(row.card_cate_id) }}</template>
-            </el-table-column>
-            <el-table-column prop="cost" label="成本" width="90" />
-            <el-table-column label="状态" width="90">
-              <template #default="{ row }">
-                <el-tag :type="row.status === 1 ? 'success' : row.status === 2 ? 'info' : 'warning'">
-                  {{ ['', '待售', '已售', '冻结'][row.status] || row.status }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="入库时间" width="160">
-              <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
-            </el-table-column>
-            <el-table-column label="操作" width="100" fixed="right">
-              <template #default="{ row }">
-                <el-popconfirm title="确定删除该卡密？" @confirm="doCardDelete(row.id)">
-                  <template #reference><el-button link type="danger">删除</el-button></template>
-                </el-popconfirm>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="cardTotal"
-              :page-size="cardQuery.limit" v-model:current-page="cardQuery.page" @current-change="loadCards" />
-          </div>
-        </el-card>
-      </el-tab-pane>
+    <template #status>
+      <mks-status-tabs v-model="activeTab" :tabs="paneTabs" @update:model-value="onTabChange" />
+    </template>
 
-      <!-- ── 导卡历史 ── -->
-      <el-tab-pane label="导卡历史" name="history">
-        <el-card shadow="never">
-          <el-table :data="historyList" border v-loading="historyLoading">
-            <el-table-column prop="id" label="批次" width="80" />
-            <el-table-column prop="card_cate_name" label="卡库" min-width="160" />
-            <el-table-column prop="count" label="数量" width="80" />
-            <el-table-column prop="cost" label="成本合计" width="110" />
-            <el-table-column prop="mark" label="备注" min-width="160" show-overflow-tooltip />
-            <el-table-column label="时间" width="160">
-              <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
-            </el-table-column>
-          </el-table>
-          <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="historyTotal"
-              :page-size="historyQuery.limit" v-model:current-page="historyQuery.page" @current-change="loadHistory" />
-          </div>
-        </el-card>
-      </el-tab-pane>
-    </el-tabs>
+    <!-- ── 卡密库 ── -->
+    <template v-if="activeTab === 'cate'">
+      <div class="toolbar">
+        <el-button size="small" type="success" @click="openCateForm()">新增卡库</el-button>
+      </div>
+      <el-table :data="cateList" border v-loading="cateLoading">
+        <template #empty><mks-empty text="还没有卡库" hint="新增卡库并导入卡密后，商品才能自动发货" /></template>
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="name" label="卡库名称" min-width="180" />
+        <el-table-column label="卡密类型" width="110">
+          <template #default="{ row }">{{ cardTypeLabel(row.card_type) }}</template>
+        </el-table-column>
+        <el-table-column label="卡号/卡密别名" width="140">
+          <template #default="{ row }">{{ row.card_no_alias }} / {{ row.card_password_alias }}</template>
+        </el-table-column>
+        <el-table-column prop="card_num" label="库存" width="80">
+          <template #default="{ row }">
+            <span :style="{ color: row.warn_open && row.card_num <= row.warn ? '#f56c6c' : '' }">{{ row.card_num }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="cost" label="成本" width="90" />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-switch v-model="row.status" :active-value="1" :inactive-value="0"
+              @change="(v) => doCateModify(row, 'status', v)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="success" @click="openImport(row)">导入卡密</el-button>
+            <el-button link type="primary" @click="openCateForm(row)">编辑</el-button>
+            <el-button link type="warning" @click="doClearCate(row)">清空</el-button>
+            <el-popconfirm title="确定删除该卡库？" @confirm="doCateDelete(row.id)">
+              <template #reference><el-button link type="danger">删除</el-button></template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pager">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="cateTotal"
+          v-model:page-size="cateQuery.limit" v-model:current-page="cateQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="(v) => { cateQuery.page = 1; loadCate(); }" @current-change="loadCate" />
+      </div>
+    </template>
+
+    <!-- ── 卡密列表 ── -->
+    <template v-else-if="activeTab === 'card'">
+      <div class="toolbar">
+        <el-select v-model="cardQuery.cateId" placeholder="全部卡库" clearable style="width: 200px" @change="doCardSearch">
+          <el-option v-for="c in cateOptions" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+        <el-select v-model="cardQuery.status" placeholder="全部状态" clearable style="width: 120px" @change="doCardSearch">
+          <el-option label="待售" :value="1" />
+          <el-option label="已售" :value="2" />
+          <el-option label="冻结" :value="3" />
+        </el-select>
+        <el-switch v-model="showFull" active-text="显示明文" @change="loadCards" />
+      </div>
+      <el-table :data="cardList" border v-loading="cardLoading">
+        <template #empty><mks-empty text="还没有卡密" hint="到「卡密库」页签为对应卡库导入卡密" /></template>
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column label="卡号" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.card_no || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="卡密" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.card_password || '—' }}</template>
+        </el-table-column>
+        <el-table-column label="卡库" width="150">
+          <template #default="{ row }">{{ cateName(row.card_cate_id) }}</template>
+        </el-table-column>
+        <el-table-column prop="cost" label="成本" width="90" />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : row.status === 2 ? 'info' : 'warning'">
+              {{ ['', '待售', '已售', '冻结'][row.status] || row.status }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="入库时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-popconfirm title="确定删除该卡密？" @confirm="doCardDelete(row.id)">
+              <template #reference><el-button link type="danger">删除</el-button></template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pager">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="cardTotal"
+          v-model:page-size="cardQuery.limit" v-model:current-page="cardQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doCardSearch" @current-change="loadCards" />
+      </div>
+    </template>
+
+    <!-- ── 导卡历史 ── -->
+    <template v-else>
+      <el-table :data="historyList" border v-loading="historyLoading">
+        <template #empty><mks-empty text="还没有导卡记录" hint="每次导入卡密都会生成一条批次记录" /></template>
+        <el-table-column prop="id" label="批次" width="80" />
+        <el-table-column prop="card_cate_name" label="卡库" min-width="160" />
+        <el-table-column prop="count" label="数量" width="80" />
+        <el-table-column prop="cost" label="成本合计" width="110" />
+        <el-table-column prop="mark" label="备注" min-width="160" show-overflow-tooltip />
+        <el-table-column label="时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
+        </el-table-column>
+      </el-table>
+      <div class="pager">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="historyTotal"
+          v-model:page-size="historyQuery.limit" v-model:current-page="historyQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="(v) => { historyQuery.page = 1; loadHistory(); }" @current-change="loadHistory" />
+      </div>
+    </template>
+  </mks-page>
 
     <!-- 卡库表单 -->
     <el-dialog v-model="cateFormVisible" :title="cateForm.id ? '编辑卡库' : '新增卡库'" width="540px">
@@ -169,25 +174,36 @@
         <el-button type="primary" :loading="saving" @click="doImport">导入</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   cardIndex, cardCreate, cardImport, cardDelete, cardDeleteAll,
   cardCateIndex, cardCateList, cardCateCreate, cardCateSave, cardCateDelete, cardHistoryIndex,
 } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const activeTab = ref('cate');
+const paneTabs = [
+  { label: '卡密库', value: 'cate' },
+  { label: '卡密列表', value: 'card' },
+  { label: '导卡历史', value: 'history' },
+];
 const saving = ref(false);
 
 // ── 卡库 ──
 const cateLoading = ref(false);
 const cateList = ref([]);
 const cateTotal = ref(0);
-const cateQuery = reactive({ page: 1, limit: 15 });
+const cateQuery = reactive({ page: 1, limit: 20 });
 const cateOptions = ref([]);
 const cateFormVisible = ref(false);
 const emptyCate = () => ({
@@ -200,7 +216,7 @@ const cateForm = reactive(emptyCate());
 const cardLoading = ref(false);
 const cardList = ref([]);
 const cardTotal = ref(0);
-const cardQuery = reactive({ page: 1, limit: 15, cateId: null, status: null });
+const cardQuery = reactive({ page: 1, limit: 20, cateId: '', status: '' });
 const showFull = ref(false);
 
 // ── 导入 ──
@@ -211,7 +227,7 @@ const importForm = reactive({ cateId: 0, cateName: '', cardType: 1, content: '',
 const historyLoading = ref(false);
 const historyList = ref([]);
 const historyTotal = ref(0);
-const historyQuery = reactive({ page: 1, limit: 15 });
+const historyQuery = reactive({ page: 1, limit: 20 });
 
 const cardTypeLabel = (t) => ({ 1: '卡密', 2: '卡号+卡密', 3: '固定卡密', 4: '固定卡号卡密' }[t] || t);
 const cateName = (id) => cateOptions.value.find((c) => c.id === id)?.name || `#${id}`;
@@ -247,6 +263,11 @@ async function loadCards() {
   } finally {
     cardLoading.value = false;
   }
+}
+
+function doCardSearch() {
+  cardQuery.page = 1;
+  loadCards();
 }
 
 async function loadHistory() {
@@ -351,3 +372,7 @@ onMounted(() => {
   loadCateOptions();
 });
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

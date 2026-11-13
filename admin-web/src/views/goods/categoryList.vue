@@ -1,15 +1,19 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar" style="margin-bottom: 0">
-          <el-button type="success" @click="openForm()">新增分类</el-button>
-          <el-button @click="load">刷新</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      商品需挂在一个分类下才能上架，排序值决定前台展示顺序（可直接在表格里改）；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/list')">商品列表</a>·
+      <a class="quick-link" @click="goCfg('/goods/cardstock')">卡密库存</a>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">新增分类</el-button>
+      <el-button size="small" plain @click="load">刷新</el-button>
+    </template>
 
       <el-table :data="tree" border row-key="id" v-loading="loading"
         :tree-props="{ children: 'children' }" default-expand-all>
+        <template #empty><mks-empty text="还没有商品分类" hint="先建一个顶级分类，商品才能归类上架" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="分类名称" min-width="220">
           <template #default="{ row }">
@@ -40,7 +44,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑分类' : '新增分类'" width="520px">
       <el-form :model="form" label-width="90px">
@@ -66,13 +70,18 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { categoryList, categoryCreate, categorySave, categoryDelete, categoryModify } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -136,3 +145,7 @@ async function doDelete(id) {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

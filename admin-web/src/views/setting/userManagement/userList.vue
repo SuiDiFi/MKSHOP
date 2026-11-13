@@ -1,17 +1,38 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <el-tabs v-model="tab">
-        <el-tab-pane label="管理员列表" name="list">
-          <div class="toolbar">
-            <el-input v-model="query.username" placeholder="账号" clearable style="width: 160px" @keyup.enter="load" />
-            <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px">
+  <mks-page>
+    <template #alert>
+      管理员的启用状态决定能否登录，角色决定其后台可见菜单与可调用接口；操作日志、登录日志只读，用于追溯改动与登录情况；快捷入口：
+      <a class="quick-link" @click="goCfg('/setting/usermanagement/rolelist')">角色权限</a>·
+      <a class="quick-link" @click="goCfg('/setting/usermanagement/menulist')">菜单管理</a>
+    </template>
+
+    <template #query>
+      <!-- 筛选项只对管理员列表生效，日志页签不展示 -->
+      <mks-query-form v-if="tab === 'list'" :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="账号">
+            <el-input v-model="query.username" placeholder="账号" clearable style="width: 160px" @keyup.enter="doSearch" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="query.status" placeholder="状态" clearable style="width: 120px" @change="doSearch">
               <el-option label="正常" value="1" /><el-option label="禁用" value="0" />
             </el-select>
-            <el-button type="primary" @click="load">查询</el-button>
-            <el-button type="success" @click="openForm()">新增管理员</el-button>
-          </div>
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <!-- 页签切换的是三个独立数据列表，不是同一列表的状态筛选 -->
+    <template #status>
+      <mks-status-tabs v-model="tab" :tabs="paneTabs" />
+    </template>
+
+    <template v-if="tab === 'list'">
+      <div class="toolbar">
+        <el-button size="small" type="success" @click="openForm()">新增管理员</el-button>
+      </div>
           <el-table :data="list" border v-loading="loading">
+            <template #empty><mks-empty text="还没有管理员" hint="新增管理员并绑定角色后，该账号才能登录后台" /></template>
             <el-table-column prop="id" label="ID" width="60" />
             <el-table-column prop="username" label="账号" min-width="110" />
             <el-table-column prop="realname" label="姓名" min-width="90" />
@@ -35,14 +56,16 @@
               </template>
             </el-table-column>
           </el-table>
-          <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="total"
-              :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-          </div>
-        </el-tab-pane>
+      <div class="pager">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </div>
+    </template>
 
-        <el-tab-pane label="操作日志" name="do_log">
+    <template v-else-if="tab === 'do_log'">
           <el-table :data="logs" border v-loading="logLoading" height="520">
+            <template #empty><mks-empty text="还没有操作日志" hint="管理员在后台的增删改操作会记录在这里" /></template>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="uid" label="管理员ID" width="90" />
             <el-table-column prop="title" label="操作" min-width="160" />
@@ -52,14 +75,16 @@
               <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
             </el-table-column>
           </el-table>
-          <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="logTotal"
-              :page-size="logQuery.limit" v-model:current-page="logQuery.page" @current-change="loadLogs" />
-          </div>
-        </el-tab-pane>
+      <div class="pager">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="logTotal"
+          v-model:page-size="logQuery.limit" v-model:current-page="logQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doLogSearch" @current-change="loadLogs" />
+      </div>
+    </template>
 
-        <el-tab-pane label="登录日志" name="login_log">
+    <template v-else-if="tab === 'login_log'">
           <el-table :data="logs" border v-loading="logLoading" height="520">
+            <template #empty><mks-empty text="还没有登录日志" hint="管理员的登录与登出事件会记录在这里" /></template>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="uid" label="管理员ID" width="90" />
             <el-table-column prop="title" label="事件" min-width="120" />
@@ -68,9 +93,8 @@
               <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
             </el-table-column>
           </el-table>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+    </template>
+    </mks-page>
 
     <!-- 新增/编辑 -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑管理员' : '新增管理员'" width="480px">
@@ -99,22 +123,34 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   adminIndex, adminCreate, adminSave, adminDelete, adminModify,
   adminDoLog, adminLoginLog, roleIndex,
 } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const tab = ref('list');
+const paneTabs = [
+  { label: '管理员列表', value: 'list' },
+  { label: '操作日志', value: 'do_log' },
+  { label: '登录日志', value: 'login_log' },
+];
 const loading = ref(false);
 const list = ref([]);
 const total = ref(0);
-const query = reactive({ page: 1, limit: 15, username: '', status: '' });
+const query = reactive({ page: 1, limit: 20, username: '', status: '' });
 
 const roles = ref([]);
 const formVisible = ref(false);
@@ -154,6 +190,22 @@ async function loadLogs() {
   } finally {
     logLoading.value = false;
   }
+}
+
+function doSearch() {
+  query.page = 1;
+  load();
+}
+
+function resetQuery() {
+  query.username = '';
+  query.status = '';
+  doSearch();
+}
+
+function doLogSearch() {
+  logQuery.page = 1;
+  loadLogs();
 }
 
 function openForm(row) {
@@ -205,3 +257,7 @@ onMounted(async () => {
   roles.value = res.data.list || [];
 });
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

@@ -1,12 +1,17 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar" style="margin-bottom: 0">
-          <el-button type="success" @click="openForm()">新增角色</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      角色勾选的菜单与接口权限点决定管理员登录后可见的菜单和可调用的接口，权限保存后需重新登录生效；快捷入口：
+      <a class="quick-link" @click="goCfg('/setting/usermanagement/menulist')">菜单管理</a>·
+      <a class="quick-link" @click="goCfg('/setting/usermanagement/userlist')">管理员列表</a>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">新增角色</el-button>
+    </template>
+
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有角色" hint="新增角色并在「权限」中勾选菜单后，管理员才有对应入口" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="角色名称" min-width="140" />
         <el-table-column prop="value" label="标识" width="110" />
@@ -30,7 +35,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </mks-page>
 
     <!-- 角色表单 -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑角色' : '新增角色'" width="460px">
@@ -62,13 +67,18 @@
         <el-button type="primary" :loading="saving" @click="doSavePerms">保存权限</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { roleIndex, roleCreate, roleSave, roleDelete, roleModifyPerms, routerIndex, getMenus } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -162,3 +172,7 @@ async function doDelete(id) {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

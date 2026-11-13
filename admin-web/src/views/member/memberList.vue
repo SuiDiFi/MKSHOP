@@ -1,24 +1,40 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-input v-model="query.keyword" placeholder="账号/昵称/手机号" clearable style="width: 200px" @keyup.enter="doSearch" />
-          <el-select v-model="query.level_id" placeholder="全部等级" clearable style="width: 140px" @change="doSearch">
-            <el-option v-for="l in levels" :key="l.id" :label="l.name" :value="l.id" />
-          </el-select>
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 120px" @change="doSearch">
-            <el-option label="正常" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-          <el-input v-model="query.pid" placeholder="上级ID" clearable style="width: 110px" @keyup.enter="doSearch" />
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="openCreate">新增会员</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      会员的等级折扣与上下级关系直接决定取价与佣金，改完记得回订单验证；快捷入口：
+      <a class="quick-link" @click="goCfg('/member/level')">会员等级</a>·
+      <a class="quick-link" @click="goCfg('/finance/membercommission')">分销佣金</a>·
+      <a class="quick-link" @click="goCfg('/member/userpricetpl')">密价模板</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="关键字">
+            <el-input v-model="query.keyword" placeholder="账号/昵称/手机号" clearable style="width: 200px" @keyup.enter="doSearch" />
+          </el-form-item>
+          <el-form-item label="等级">
+            <el-select v-model="query.level_id" placeholder="全部等级" clearable style="width: 140px" @change="doSearch">
+              <el-option v-for="l in levels" :key="l.id" :label="l.name" :value="l.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="上级ID">
+            <el-input v-model="query.pid" placeholder="上级ID" clearable style="width: 110px" @keyup.enter="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #status>
+      <mks-status-tabs v-model="query.status" :tabs="statusTabs" @update:model-value="doSearch" />
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openCreate">新增会员</el-button>
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="没有符合条件的会员" hint="试试放宽关键字、等级或上级ID" /></template>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="账号" min-width="120" show-overflow-tooltip />
         <el-table-column prop="nickname" label="昵称" min-width="110" show-overflow-tooltip />
@@ -63,12 +79,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
-          layout="total, sizes, prev, pager, next, jumper" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <!-- 新增/编辑 -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑会员' : '新增会员'" width="520px">
@@ -122,22 +138,30 @@
         <el-descriptions-item label="最后登录">{{ fmt(detail.last_time) }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   memberIndex, memberRead, memberCreate, memberSave, memberDelete,
   memberUnbind, memberResetPassword, memberLevelList,
 } from '../../api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const list = ref([]);
 const total = ref(0);
 const levels = ref([]);
-const query = reactive({ page: 1, limit: 20, keyword: '', level_id: null, status: null, pid: '' });
+const query = reactive({ page: 1, limit: 20, keyword: '', level_id: null, status: '', pid: '' });
+const statusTabs = [{ label: '全部', value: '' }, { label: '正常', value: 1 }, { label: '禁用', value: 0 }];
 const formVisible = ref(false);
 const saving = ref(false);
 const form = ref({});
@@ -172,7 +196,7 @@ const load = async () => {
 };
 const doSearch = () => { query.page = 1; load(); };
 const resetQuery = () => {
-  Object.assign(query, { page: 1, keyword: '', level_id: null, status: null, pid: '' });
+  Object.assign(query, { page: 1, keyword: '', level_id: null, status: '', pid: '' });
   load();
 };
 const openCreate = () => {
@@ -238,6 +262,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+.quick-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
 </style>

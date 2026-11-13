@@ -1,12 +1,17 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar" style="margin-bottom: 0">
-          <el-button type="success" @click="openForm()">新增品牌</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      品牌用于商品打标与前台筛选，排序值决定品牌列表展示顺序；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/list')">商品列表</a>·
+      <a class="quick-link" @click="goCfg('/goods/category')">商品分类</a>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">新增品牌</el-button>
+    </template>
+
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有品牌" hint="新增品牌后即可在商品编辑页勾选" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="品牌名称" min-width="180">
           <template #default="{ row }">
@@ -33,11 +38,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="load" @current-change="load" />
+      </template>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑品牌' : '新增品牌'" width="460px">
       <el-form :model="form" label-width="90px">
@@ -52,13 +58,18 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { tagsIndex, tagsCreate, tagsSave, tagsDelete, tagsModify } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -118,3 +129,7 @@ async function doDelete(id) {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

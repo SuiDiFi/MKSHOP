@@ -1,12 +1,18 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar" style="margin-bottom: 0">
-          <el-button type="success" @click="openForm()">新增任务</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      定时任务由 cron 每分钟执行 `php think mks:timer` 触发，只有已注册的 mark 才会跑（渠道补单、处理中订单同步兜底、统计刷新）；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/docking')">对接渠道</a>·
+      <a class="quick-link" @click="goCfg('/order/list')">订单列表</a>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">新增任务</el-button>
+      <el-button size="small" plain @click="load">刷新</el-button>
+    </template>
+
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有定时任务" hint="新增任务并启用后，队列进程会按周期自动执行" /></template>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="任务标题" min-width="150" />
         <el-table-column prop="name" label="任务标识" min-width="150" />
@@ -28,7 +34,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑任务' : '新增任务'" width="500px">
       <el-form :model="form" label-width="100px">
@@ -46,13 +52,18 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { timerIndex, timerTaskName, timerCreate, timerSave, timerDelete, timerModify } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -114,3 +125,7 @@ onMounted(async () => {
   } catch (e) { /* 任务注册表可选 */ }
 });
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

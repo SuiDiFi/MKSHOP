@@ -1,16 +1,15 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <span style="font-size: 13px; color: #909399">
-            折扣率语义：0 = 不打折；95 = 95 折（按商品售价百分比）；一级/二级佣金比例按订单实付计算
-          </span>
-          <el-button type="success" style="margin-left: auto" @click="openCreate">新增等级</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      折扣率语义：0 = 不打折；95 = 95 折（按商品售价百分比）；一级/二级佣金比例按订单实付计算
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openCreate">新增等级</el-button>
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有会员等级" hint="先新增一个等级，用户列表的等级折扣才能生效" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="等级名称" min-width="120" />
         <el-table-column label="升级门槛(累计消费)" width="150">
@@ -51,7 +50,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑等级' : '新增等级'" width="560px">
       <el-form label-width="120px">
@@ -87,13 +86,14 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { memberLevelList, memberLevelCreate, memberLevelSave, memberLevelDelete } from '../../api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
 
 const loading = ref(false);
 const list = ref([]);
@@ -151,6 +151,3 @@ const doDelete = async (row) => {
 onMounted(load);
 </script>
 
-<style scoped>
-.toolbar { display: flex; gap: 8px; align-items: center; }
-</style>

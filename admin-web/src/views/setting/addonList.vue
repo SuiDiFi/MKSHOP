@@ -1,17 +1,17 @@
 <template>
-  <div>
-    <el-card shadow="never">
-      <template #header>
-        <div class="head">
-          <b>插件管理</b>
-          <div>
-            <el-tag type="info" effect="plain" size="small">MVP：仅支持服务器本地 addons/ 目录安装</el-tag>
-            <el-button style="margin-left: 10px" @click="load">刷新</el-button>
-          </div>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      插件只扫描服务器本地 addons/ 目录，安装后才注入后台菜单与钩子，配置项来自插件自带 config.php；快捷入口：
+      <a class="quick-link" @click="goCfg('/application/market')">应用市场</a>
+    </template>
+
+    <template #toolbar>
+      <el-tag type="info" effect="plain" size="small">MVP：仅支持服务器本地 addons/ 目录安装</el-tag>
+      <el-button size="small" plain @click="load">刷新</el-button>
+    </template>
 
       <el-table :data="list" v-loading="loading" border size="small">
+        <template #empty><mks-empty text="还没有可用插件" hint="把插件包放到服务器 addons/ 目录后点「刷新」重新扫描" /></template>
         <el-table-column prop="title" label="插件" min-width="160" show-overflow-tooltip />
         <el-table-column prop="name" label="标识" width="120" />
         <el-table-column prop="version" label="版本" width="90" />
@@ -42,8 +42,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div v-if="!loading && list.length === 0" class="empty">addons/ 目录下暂无可用插件</div>
-    </el-card>
+    </mks-page>
 
     <!-- 配置 -->
     <el-dialog v-model="configVisible" :title="`插件配置 · ${configTitle}`" width="560px">
@@ -85,15 +84,20 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   addonIndex, addonRead, addonInstall, addonEnable, addonDisable, addonUninstall, addonConfigSave,
 } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const list = ref([]);
 const loading = ref(false);
@@ -169,16 +173,7 @@ onMounted(load);
 </script>
 
 <style scoped>
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.empty {
-  padding: 20px;
-  color: #909399;
-  text-align: center;
-}
+.quick-link { color: var(--mks-primary); cursor: pointer; }
 .tip {
   color: #909399;
   font-size: 12px;

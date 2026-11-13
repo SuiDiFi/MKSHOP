@@ -1,8 +1,13 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header><b>DIY 页面装修</b></template>
+  <mks-page>
+    <template #alert>
+      前台首页按「已发布」DIY 页面的组件树渲染，草稿改动需发布后才生效；分类导航、商品列表、图片广告等组件的数据来自对应模块；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/category')">商品分类</a>·
+      <a class="quick-link" @click="goCfg('/manage/advertisement')">图片广告</a>
+    </template>
+
       <el-table :data="pages" v-loading="loading" border>
+        <template #empty><mks-empty text="还没有 DIY 页面" hint="进入装修编辑器搭建组件树并发布后，前台首页才有内容" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="title" label="页面" min-width="140" />
         <el-table-column prop="desc" label="描述" min-width="180" />
@@ -23,13 +28,18 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
-  </div>
+  </mks-page>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { diyIndex } from '../../api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const pages = ref([]);
 const loading = ref(false);
@@ -54,3 +64,7 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

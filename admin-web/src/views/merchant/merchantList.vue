@@ -1,27 +1,69 @@
 <template>
-  <div>
-    <el-card shadow="never">
-      <template #header>
-        <div class="head">
-          <b>商户管理</b>
-          <div>
-            <el-button type="primary" @click="openCreate">新增商户</el-button>
-          </div>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      商户须绑定会员账号才能开店，入驻审核通过后才生成店铺，货款按结算状态解冻后才可用；快捷入口：
+      <a class="quick-link" @click="goCfg('/member/list')">会员列表</a>·
+      <a class="quick-link" @click="goCfg('/finance/membermoney')">客户资金明细</a>
+    </template>
 
-      <el-tabs v-model="tab" @tab-change="onTabChange">
-        <!-- 商户列表 -->
-        <el-tab-pane label="商户列表" name="merchant">
-          <div class="bar">
-            <el-input v-model="mQuery.keyword" placeholder="店铺名/联系人/电话" clearable style="width: 220px" @keyup.enter="loadMerchants" />
-            <el-select v-model="mQuery.status" placeholder="状态" clearable style="width: 130px" @change="loadMerchants">
+    <template #query>
+      <!-- 三个页签是三个独立列表，筛选区随当前页签切换 -->
+      <mks-query-form v-if="tab === 'merchant'" :model="mQuery" :loading="loadingMerchant" @search="doMerchantSearch" @reset="resetMerchantQuery">
+        <template #short>
+          <el-form-item label="关键字">
+            <el-input v-model="mQuery.keyword" placeholder="店铺名/联系人/电话" clearable style="width: 220px" @keyup.enter="doMerchantSearch" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="mQuery.status" placeholder="状态" clearable style="width: 130px" @change="doMerchantSearch">
               <el-option label="正常" :value="1" />
               <el-option label="停用" :value="0" />
             </el-select>
-            <el-button @click="loadMerchants">查询</el-button>
-          </div>
+          </el-form-item>
+        </template>
+      </mks-query-form>
+      <mks-query-form v-else-if="tab === 'apply'" :model="aQuery" :loading="loadingApply" @search="doApplySearch" @reset="resetApplyQuery">
+        <template #short>
+          <el-form-item label="审核状态">
+            <el-select v-model="aQuery.status" placeholder="审核状态" clearable style="width: 140px" @change="doApplySearch">
+              <el-option label="待审核" :value="1" />
+              <el-option label="已通过" :value="2" />
+              <el-option label="已拒绝" :value="3" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="关键字">
+            <el-input v-model="aQuery.keyword" placeholder="店铺名/联系人/电话" clearable style="width: 220px" @keyup.enter="doApplySearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+      <mks-query-form v-else :model="sQuery" :loading="loadingSettle" @search="doSettleSearch" @reset="resetSettleQuery">
+        <template #short>
+          <el-form-item label="订单号">
+            <el-input v-model="sQuery.keyword" placeholder="订单号" clearable style="width: 200px" @keyup.enter="doSettleSearch" />
+          </el-form-item>
+          <el-form-item label="结算状态">
+            <el-select v-model="sQuery.sure_status" placeholder="结算状态" clearable style="width: 140px" @change="doSettleSearch">
+              <el-option label="待结算" :value="1" />
+              <el-option label="已结算" :value="2" />
+              <el-option label="已退款" :value="3" />
+              <el-option label="部分退款" :value="4" />
+            </el-select>
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #status>
+      <mks-status-tabs v-model="tab" :tabs="paneTabs" @update:model-value="onTabChange" />
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openCreate">新增商户</el-button>
+    </template>
+
+    <!-- ── 商户列表 ── -->
+    <template v-if="tab === 'merchant'">
           <el-table :data="merchants" v-loading="loadingMerchant" border size="small">
+            <template #empty><mks-empty text="还没有商户" hint="新增商户或审核通过入驻申请后，这里才会出现店铺" /></template>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="name" label="店铺名" min-width="150" show-overflow-tooltip />
             <el-table-column prop="username" label="会员账号" width="130" />
@@ -46,23 +88,16 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="mTotal"
-              :page-size="mQuery.limit" v-model:current-page="mQuery.page" @current-change="loadMerchants" />
+            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="mTotal"
+              v-model:page-size="mQuery.limit" v-model:current-page="mQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+              @size-change="doMerchantSearch" @current-change="loadMerchants" />
           </div>
-        </el-tab-pane>
+    </template>
 
-        <!-- 入驻审核 -->
-        <el-tab-pane label="入驻审核" name="apply">
-          <div class="bar">
-            <el-select v-model="aQuery.status" placeholder="审核状态" clearable style="width: 140px" @change="loadApplies">
-              <el-option label="待审核" :value="1" />
-              <el-option label="已通过" :value="2" />
-              <el-option label="已拒绝" :value="3" />
-            </el-select>
-            <el-input v-model="aQuery.keyword" placeholder="店铺名/联系人/电话" clearable style="width: 220px" @keyup.enter="loadApplies" />
-            <el-button @click="loadApplies">查询</el-button>
-          </div>
+    <!-- ── 入驻审核 ── -->
+    <template v-else-if="tab === 'apply'">
           <el-table :data="applies" v-loading="loadingApply" border size="small">
+            <template #empty><mks-empty text="还没有入驻申请" hint="会员在前台发起商户入驻申请后进入这里审核" /></template>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="merchant_name" label="店铺名" min-width="150" show-overflow-tooltip />
             <el-table-column prop="username" label="会员账号" width="130" />
@@ -79,24 +114,16 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="aTotal"
-              :page-size="aQuery.limit" v-model:current-page="aQuery.page" @current-change="loadApplies" />
+            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="aTotal"
+              v-model:page-size="aQuery.limit" v-model:current-page="aQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+              @size-change="doApplySearch" @current-change="loadApplies" />
           </div>
-        </el-tab-pane>
+    </template>
 
-        <!-- 货款结算 -->
-        <el-tab-pane label="货款结算" name="settlement">
-          <div class="bar">
-            <el-input v-model="sQuery.keyword" placeholder="订单号" clearable style="width: 200px" @keyup.enter="loadSettlements" />
-            <el-select v-model="sQuery.sure_status" placeholder="结算状态" clearable style="width: 140px" @change="loadSettlements">
-              <el-option label="待结算" :value="1" />
-              <el-option label="已结算" :value="2" />
-              <el-option label="已退款" :value="3" />
-              <el-option label="部分退款" :value="4" />
-            </el-select>
-            <el-button @click="loadSettlements">查询</el-button>
-          </div>
+    <!-- ── 货款结算 ── -->
+    <template v-else>
           <el-table :data="settlements" v-loading="loadingSettle" border size="small">
+            <template #empty><mks-empty text="还没有货款结算单" hint="商户订单交易完成后才生成结算记录" /></template>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="ordersn" label="订单号" min-width="180" />
             <el-table-column prop="goods_name" label="商品" min-width="160" show-overflow-tooltip />
@@ -110,12 +137,12 @@
             </el-table-column>
           </el-table>
           <div class="pager">
-            <el-pagination background layout="total, prev, pager, next" :total="sTotal"
-              :page-size="sQuery.limit" v-model:current-page="sQuery.page" @current-change="loadSettlements" />
+            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="sTotal"
+              v-model:page-size="sQuery.limit" v-model:current-page="sQuery.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+              @size-change="doSettleSearch" @current-change="loadSettlements" />
           </div>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+    </template>
+    </mks-page>
 
     <!-- 新增商户 -->
     <el-dialog v-model="createVisible" title="新增商户" width="560px">
@@ -223,26 +250,39 @@
         </template>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   merchantIndex, merchantRead, merchantCreate, merchantSave, merchantStatus,
   merchantMemberOptions, merchantSupplyFlow, merchantSettlementIndex,
   merchantApplyIndex, merchantApplyRead, merchantApplyAudit,
 } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const tab = ref('merchant');
+// 页签切换的是三个独立数据列表，不是同一列表的状态筛选
+const paneTabs = [
+  { label: '商户列表', value: 'merchant' },
+  { label: '入驻审核', value: 'apply' },
+  { label: '货款结算', value: 'settlement' },
+];
 const fmt = (t) => (Number(t) > 0 ? new Date(Number(t) * 1000).toLocaleString('zh-CN', { hour12: false }) : '—');
 
 // 商户列表
 const merchants = ref([]);
 const mTotal = ref(0);
 const loadingMerchant = ref(false);
-const mQuery = ref({ page: 1, limit: 15, keyword: '', status: '' });
+const mQuery = ref({ page: 1, limit: 20, keyword: '', status: '' });
 const loadMerchants = async () => {
   loadingMerchant.value = true;
   try {
@@ -250,6 +290,15 @@ const loadMerchants = async () => {
     merchants.value = res.data?.list || [];
     mTotal.value = res.data?.count || 0;
   } finally { loadingMerchant.value = false; }
+};
+const doMerchantSearch = () => {
+  mQuery.value.page = 1;
+  loadMerchants();
+};
+const resetMerchantQuery = () => {
+  mQuery.value.keyword = '';
+  mQuery.value.status = '';
+  doMerchantSearch();
 };
 const toggleStatus = async (row, val) => {
   await ElMessageBox.confirm(`确定${val ? '启用' : '停用'}商户「${row.name}」？`, '提示', { type: 'warning' });
@@ -342,7 +391,7 @@ const loadFlow = async () => {
 const applies = ref([]);
 const aTotal = ref(0);
 const loadingApply = ref(false);
-const aQuery = ref({ page: 1, limit: 15, keyword: '', status: 1 });
+const aQuery = ref({ page: 1, limit: 20, keyword: '', status: 1 });
 const loadApplies = async () => {
   loadingApply.value = true;
   try {
@@ -350,6 +399,16 @@ const loadApplies = async () => {
     applies.value = res.data?.list || [];
     aTotal.value = res.data?.count || 0;
   } finally { loadingApply.value = false; }
+};
+const doApplySearch = () => {
+  aQuery.value.page = 1;
+  loadApplies();
+};
+const resetApplyQuery = () => {
+  // 默认只看待审核，重置回到该页签初始值
+  aQuery.value.keyword = '';
+  aQuery.value.status = 1;
+  doApplySearch();
 };
 const applyVisible = ref(false);
 const applyDetail = ref({});
@@ -376,7 +435,7 @@ const audit = async (status) => {
 const settlements = ref([]);
 const sTotal = ref(0);
 const loadingSettle = ref(false);
-const sQuery = ref({ page: 1, limit: 15, keyword: '', sure_status: '' });
+const sQuery = ref({ page: 1, limit: 20, keyword: '', sure_status: '' });
 const loadSettlements = async () => {
   loadingSettle.value = true;
   try {
@@ -384,6 +443,15 @@ const loadSettlements = async () => {
     settlements.value = res.data?.list || [];
     sTotal.value = res.data?.count || 0;
   } finally { loadingSettle.value = false; }
+};
+const doSettleSearch = () => {
+  sQuery.value.page = 1;
+  loadSettlements();
+};
+const resetSettleQuery = () => {
+  sQuery.value.keyword = '';
+  sQuery.value.sure_status = '';
+  doSettleSearch();
 };
 
 const onTabChange = (name) => {
@@ -395,8 +463,6 @@ onMounted(loadMerchants);
 </script>
 
 <style scoped>
-.head { display: flex; justify-content: space-between; align-items: center; }
-.bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-.pager { display: flex; justify-content: flex-end; margin-top: 10px; }
 .section { font-weight: 600; margin: 16px 0 8px; color: #303133; }
+.quick-link { color: var(--mks-primary); cursor: pointer; }
 </style>

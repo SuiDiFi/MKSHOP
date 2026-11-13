@@ -1,21 +1,31 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-select v-model="query.type" placeholder="全部类型" clearable style="width: 130px" @change="doSearch">
-            <el-option label="会员密价" :value="1" />
-            <el-option label="销售限价" :value="2" />
-            <el-option label="商品权限" :value="3" />
-          </el-select>
-          <el-input v-model="query.keyword" placeholder="模板名称" clearable style="width: 180px" @keyup.enter="doSearch" />
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="openForm()">添加模板</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      模板本身不直接改价，必须在商品或用户上绑定才生效；取价优先级：分站价 &gt; 用户密价 &gt; 定价模板 &gt; 会员等级折扣；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/list')">商品列表</a>·
+      <a class="quick-link" @click="goCfg('/member/list')">用户列表</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="模板名称">
+            <el-input v-model="query.keyword" placeholder="模板名称" clearable style="width: 200px" @keyup.enter="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #status>
+      <mks-status-tabs v-model="query.type" :tabs="typeTabs" @update:model-value="doSearch" />
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">添加模板</el-button>
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有定价模板" hint="先添加模板，再到商品或用户上绑定" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="模板名称" min-width="160" />
         <el-table-column label="类型" width="100">
@@ -49,11 +59,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <!-- 编辑弹窗：基础信息 + 商品多选 + 用户ID -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑模板' : '添加模板'" width="680px" top="6vh">
@@ -101,13 +112,20 @@
         <el-button type="primary" :loading="saving" @click="doSave">确定</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { userPriceTplIndex, userPriceTplRead, userPriceTplCreate, userPriceTplSave, userPriceTplDelete, userPriceTplModify, goodsIndex } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const TYPE_LABELS = { 1: '会员密价', 2: '销售限价', 3: '商品权限' };
 const MODE_LABELS = { 1: '按比例加价', 2: '固定加价', 3: '固定售价' };
@@ -116,7 +134,13 @@ const loading = ref(false);
 const saving = ref(false);
 const list = ref([]);
 const total = ref(0);
-const query = reactive({ page: 1, limit: 15, type: null, keyword: '' });
+const query = reactive({ page: 1, limit: 20, type: '', keyword: '' });
+const typeTabs = [
+  { label: '全部', value: '' },
+  { label: '会员密价', value: 1 },
+  { label: '销售限价', value: 2 },
+  { label: '商品权限', value: 3 },
+];
 
 const formVisible = ref(false);
 const form = reactive({ id: 0, name: '', type: 1, mode: 1, value: 0, status: 1, goods_ids: [], user_ids: [] });
@@ -163,7 +187,7 @@ function doSearch() {
 }
 
 function resetQuery() {
-  query.type = null;
+  query.type = '';
   query.keyword = '';
   doSearch();
 }
@@ -239,7 +263,10 @@ onMounted(load);
 </script>
 
 <style scoped>
-.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.quick-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
 .hint { color: #999; font-size: 12px; margin-left: 8px; }
 .goods-select { max-width: 480px; }
 </style>

@@ -1,22 +1,26 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-input v-model="query.order_id" placeholder="订单ID" clearable style="width: 140px" @keyup.enter="doSearch" />
-          <el-input v-model="query.uid" placeholder="会员ID" clearable style="width: 140px" @keyup.enter="doSearch" />
-          <el-select v-model="query.sure_status" placeholder="结算状态" clearable style="width: 140px" @change="doSearch">
-            <el-option label="待结算" :value="1" />
-            <el-option label="已结算" :value="2" />
-            <el-option label="已退款" :value="3" />
-            <el-option label="部分退款" :value="4" />
-          </el-select>
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      佣金在订单完成后进入冻结期，冻结至到期才可自动结算；此处仅对「待结算」记录提供强制结算。快捷入口：
+      <a class="quick-link" @click="goCfg('/member/level')">会员等级</a>·
+      <a class="quick-link" @click="goCfg('/finance/withdraw')">提现记录</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="订单ID"><el-input v-model="query.order_id" placeholder="订单ID" clearable style="width: 140px" @keyup.enter="doSearch" /></el-form-item>
+          <el-form-item label="会员ID"><el-input v-model="query.uid" placeholder="会员ID" clearable style="width: 140px" @keyup.enter="doSearch" /></el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #status>
+      <mks-status-tabs v-model="query.sure_status" :tabs="sureTabs" @update:model-value="doSearch" />
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="没有符合条件的佣金记录" hint="试试放宽订单ID或会员ID" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="order_id" label="订单ID" width="90" />
         <el-table-column label="层级" width="70">
@@ -57,23 +61,38 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
-  </div>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+  </mks-page>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { commissionIndex, commissionSettle } from '../../api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const list = ref([]);
 const total = ref(0);
-const query = ref({ page: 1, limit: 15, order_id: '', uid: '', sure_status: '' });
+const query = ref({ page: 1, limit: 20, order_id: '', uid: '', sure_status: '' });
+const sureTabs = [
+  { label: '全部', value: '' },
+  { label: '待结算', value: 1 },
+  { label: '已结算', value: 2 },
+  { label: '已退款', value: 3 },
+  { label: '部分退款', value: 4 },
+];
 
 const load = async () => {
   loading.value = true;
@@ -91,7 +110,7 @@ const load = async () => {
 };
 const doSearch = () => { query.value.page = 1; load(); };
 const resetQuery = () => {
-  query.value = { page: 1, limit: 15, order_id: '', uid: '', sure_status: '' };
+  query.value = { page: 1, limit: 20, order_id: '', uid: '', sure_status: '' };
   load();
 };
 const doSettle = async (row) => {
@@ -106,6 +125,8 @@ onMounted(load);
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+.quick-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
 </style>

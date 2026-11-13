@@ -1,14 +1,18 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar" style="margin-bottom: 0">
-          <el-button type="success" @click="openForm(0)">新增节点</el-button>
-          <el-button @click="load">刷新</el-button>
-          <el-tag type="warning" style="margin-left: auto">修改菜单后需重新登录刷新前端路由</el-tag>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      菜单节点决定后台路由与左侧导航，接口权限点决定角色可调用的接口，修改菜单后需重新登录刷新前端路由；快捷入口：
+      <a class="quick-link" @click="goCfg('/setting/usermanagement/rolelist')">角色权限</a>·
+      <a class="quick-link" @click="goCfg('/setting/usermanagement/userlist')">管理员列表</a>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm(0)">新增节点</el-button>
+      <el-button size="small" plain @click="load">刷新</el-button>
+    </template>
+
       <el-table :data="tree" border row-key="id" default-expand-all v-loading="loading">
+        <template #empty><mks-empty text="还没有菜单节点" hint="新增菜单节点后，对应角色重新登录即可看到入口" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="title" label="标题" min-width="160" />
         <el-table-column prop="name" label="路由名" min-width="120" />
@@ -35,7 +39,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </mks-page>
 
     <el-dialog v-model="formVisible" :title="form.id ? '编辑节点' : '新增节点'" width="560px">
       <el-form :model="form" label-width="100px">
@@ -71,13 +75,18 @@
         <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { routerIndex, routerRead, routerCreate, routerSave, routerDelete } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -144,3 +153,7 @@ async function doDelete(id) {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>

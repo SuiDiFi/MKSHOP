@@ -1,25 +1,34 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 130px" @change="doSearch">
-            <el-option label="待审核" :value="1" />
-            <el-option label="已通过" :value="2" />
-            <el-option label="已拒绝" :value="3" />
-          </el-select>
-          <el-select v-model="query.type" placeholder="全部来源" clearable style="width: 120px" @change="doSearch">
-            <el-option label="余额" :value="1" />
-            <el-option label="佣金" :value="2" />
-            <el-option label="商户货款" :value="3" />
-          </el-select>
-          <el-input v-model="query.keyword" placeholder="会员/姓名/账号" clearable style="width: 180px" @keyup.enter="doSearch" />
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      提现申请需人工核对线下打款后再通过，通过后冻结金额直接出账且不可撤销；快捷入口：
+      <a class="quick-link" @click="goCfg('/finance/membercommission')">分销佣金</a>·
+      <a class="quick-link" @click="goCfg('/member/list')">用户列表</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="来源">
+            <el-select v-model="query.type" placeholder="全部来源" clearable style="width: 130px" @change="doSearch">
+              <el-option label="余额" :value="1" />
+              <el-option label="佣金" :value="2" />
+              <el-option label="商户货款" :value="3" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="关键字">
+            <el-input v-model="query.keyword" placeholder="会员/姓名/账号" clearable style="width: 200px" @keyup.enter="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #status>
+      <mks-status-tabs v-model="query.status" :tabs="statusTabs" @update:model-value="doSearch" />
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="没有符合条件的提现申请" hint="试试放宽来源或关键字筛选" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="会员" min-width="130">
           <template #default="{ row }">
@@ -72,11 +81,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <el-dialog v-model="reviewVisible" :title="review.status === 2 ? '确认通过并打款' : '拒绝提现申请'" width="480px">
       <el-alert v-if="review.status === 2" type="warning" :closable="false" show-icon
@@ -96,18 +106,31 @@
         </el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { memberCollectIndex, memberCollectDual } from '../../api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const list = ref([]);
 const total = ref(0);
-const query = reactive({ page: 1, limit: 15, status: null, type: null, keyword: '' });
+const query = reactive({ page: 1, limit: 20, status: '', type: null, keyword: '' });
+const statusTabs = [
+  { label: '全部', value: '' },
+  { label: '待审核', value: 1 },
+  { label: '已通过', value: 2 },
+  { label: '已拒绝', value: 3 },
+];
 const reviewVisible = ref(false);
 const submitting = ref(false);
 const review = reactive({ row: null, status: 2, mark: '' });
@@ -135,7 +158,7 @@ const load = async () => {
 };
 const doSearch = () => { query.page = 1; load(); };
 const resetQuery = () => {
-  Object.assign(query, { page: 1, status: null, type: null, keyword: '' });
+  Object.assign(query, { page: 1, status: '', type: null, keyword: '' });
   load();
 };
 const openReview = (row, status) => {
@@ -160,6 +183,8 @@ onMounted(load);
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+.quick-link {
+  color: var(--mks-primary);
+  cursor: pointer;
+}
 </style>

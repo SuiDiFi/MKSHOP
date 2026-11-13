@@ -1,15 +1,27 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <el-input v-model="query.name" placeholder="分站名称" clearable style="width: 180px" @keyup.enter="doSearch" />
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button type="success" @click="openCreate">新建分站</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      分站按「绑定域名 / 二级目录」独立进站，状态停用后前台不可访问，「主站商品」开关决定分站能否展示主站商品，结算冻结填 0 时取全局 order_vip_sure_time；快捷入口：
+      <a class="quick-link" @click="goCfg('/member/list')">会员列表</a>·
+      <a class="quick-link" @click="goCfg('/member/level')">会员等级</a>
+    </template>
+
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="分站名称">
+            <el-input v-model="query.name" placeholder="分站名称" clearable style="width: 180px" @keyup.enter="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openCreate">新建分站</el-button>
+    </template>
 
       <el-table :data="list" v-loading="loading" border>
+        <template #empty><mks-empty text="还没有分站" hint="新建分站并绑定域名后，可用独立域名进入商城" /></template>
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="分站名称" min-width="130" />
         <el-table-column label="分站主" min-width="140">
@@ -48,11 +60,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <!-- 新建/编辑 -->
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑分站' : '新建分站'" width="480px">
@@ -97,19 +110,25 @@
 
     <!-- 运营详情 -->
     <vip-detail v-model="detailVisible" :site-id="detailSiteId" />
-  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { vipIndex, vipCreate, vipSave, vipDelete } from '../../api';
 import VipDetail from './vipDetail.vue';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const list = ref([]);
 const total = ref(0);
 const loading = ref(false);
-const query = ref({ page: 1, limit: 15, name: '' });
+const query = ref({ page: 1, limit: 20, name: '' });
 const dialogVisible = ref(false);
 const saving = ref(false);
 const form = ref({});
@@ -127,6 +146,7 @@ const load = async () => {
   }
 };
 const doSearch = () => { query.value.page = 1; load(); };
+const resetQuery = () => { query.value.name = ''; doSearch(); };
 const openCreate = () => {
   form.value = { uid: 10000, name: '', domain: '', path_prefix: '', allow_main_goods: 1, settle_minutes: 0, rate: 0, share_rate: 0, status: 1, mark: '' };
   dialogVisible.value = true;
@@ -165,7 +185,6 @@ onMounted(load);
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 8px; align-items: center; }
-.pager { display: flex; justify-content: flex-end; margin-top: 12px; }
+.quick-link { color: var(--mks-primary); cursor: pointer; }
 .tip { color: #909399; font-size: 12px; margin-left: 6px; }
 </style>

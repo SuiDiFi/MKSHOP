@@ -1,36 +1,42 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <!-- 状态页签（对齐 KASUSHOU：所有/自营/商家/渠道售后 → 按 status+来源双维） -->
-      <el-tabs v-model="query.statusTab" @tab-change="doSearch">
-        <el-tab-pane label="所有售后" name="" />
-        <el-tab-pane label="待处理" name="1" />
-        <el-tab-pane label="已处理" name="2" />
-        <el-tab-pane label="已撤销" name="3" />
-        <el-tab-pane label="自营售后" name="s1" />
-        <el-tab-pane label="商家售后" name="s2" />
-        <el-tab-pane label="渠道售后" name="s3" />
-      </el-tabs>
+  <mks-page>
+    <template #alert>
+      售后单按「状态 + 来源」双维筛选，处理同意即按填写金额退款；快捷入口：
+      <a class="quick-link" @click="goCfg('/order/list')">订单列表</a>·
+      <a class="quick-link" @click="goCfg('/order/fastreply')">快速回复</a>
+    </template>
 
-      <el-form inline size="default" class="filter-form" @submit.prevent>
-        <el-form-item label="搜索"><el-input v-model="query.keyword" placeholder="订单号/主题/用户" clearable style="width: 180px" @keyup.enter="doSearch" /></el-form-item>
-        <el-form-item label="售后类型">
-          <el-select v-model="query.type_id" clearable style="width: 140px" @change="doSearch">
-            <el-option v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="创建时间">
-          <el-date-picker v-model="query.create_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
-            start-placeholder="开始" end-placeholder="结束" style="width: 330px" @change="doSearch" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="doSearch">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-          <el-button plain @click="doExport">售后记录导出</el-button>
-        </el-form-item>
-      </el-form>
+    <template #query>
+      <mks-query-form :model="query" :loading="loading" @search="doSearch" @reset="resetQuery">
+        <template #short>
+          <el-form-item label="搜索">
+            <el-input v-model="query.keyword" placeholder="订单号/主题/用户" clearable style="width: 180px" @keyup.enter="doSearch" />
+          </el-form-item>
+          <el-form-item label="售后类型">
+            <el-select v-model="query.type_id" clearable style="width: 140px" @change="doSearch">
+              <el-option v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
+            </el-select>
+          </el-form-item>
+        </template>
+        <template #more>
+          <el-form-item label="创建时间">
+            <el-date-picker v-model="query.create_range" type="datetimerange" value-format="YYYY-MM-DD HH:mm:ss"
+              start-placeholder="开始" end-placeholder="结束" style="width: 330px" @change="doSearch" />
+          </el-form-item>
+        </template>
+      </mks-query-form>
+    </template>
+
+    <template #status>
+      <mks-status-tabs v-model="query.statusTab" :tabs="statusTabs" @update:model-value="doSearch" />
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" plain @click="doExport">售后记录导出</el-button>
+    </template>
 
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有售后单" hint="买家在订单详情发起售后后会进入这里处理" /></template>
         <el-table-column label="售后状态" width="100">
           <template #default="{ row }">
             <el-tag :type="{ 1: 'warning', 2: 'success', 3: 'info' }[row.status]" size="small">{{ row.status_text }}</el-tag>
@@ -61,11 +67,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
-        <el-pagination background layout="total, prev, pager, next" :total="total"
-          :page-size="query.limit" v-model:current-page="query.page" @current-change="load" />
-      </div>
-    </el-card>
+      <template #pager>
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+          v-model:page-size="query.limit" v-model:current-page="query.page" :page-sizes="[20, 50, 100, 200, 500, 1000]"
+          @size-change="doSearch" @current-change="load" />
+      </template>
+    </mks-page>
 
     <!-- 详情抽屉 -->
     <el-drawer v-model="detailVisible" title="售后详情" size="520px">
@@ -102,13 +109,20 @@
         <el-button type="primary" :loading="saving" @click="doHandle">确认处理</el-button>
       </template>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { complainIndex, complainRead, complainDual, complainTypeList, exportCsv } from '@/api';
+import mksPage from '@/components/mksPage.vue';
+import mksQueryForm from '@/components/mksQueryForm.vue';
+import mksStatusTabs from '@/components/mksStatusTabs.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const list = ref([]);
@@ -120,7 +134,18 @@ const handleVisible = ref(false);
 const saving = ref(false);
 const handleForm = reactive({ id: 0, result: 'agree', money: 0, total: '0', mark: '' });
 
-const query = reactive({ page: 1, limit: 15, statusTab: '', keyword: '', type_id: null, create_range: null });
+// 状态页签（对齐 KASUSHOU：所有/自营/商家/渠道售后 → 按 status+来源双维）
+const statusTabs = [
+  { label: '所有售后', value: '' },
+  { label: '待处理', value: '1' },
+  { label: '已处理', value: '2' },
+  { label: '已撤销', value: '3' },
+  { label: '自营售后', value: 's1' },
+  { label: '商家售后', value: 's2' },
+  { label: '渠道售后', value: 's3' },
+];
+
+const query = reactive({ page: 1, limit: 20, statusTab: '', keyword: '', type_id: '', create_range: null });
 
 const orderStatusText = (s) => ({
   [-1]: '取消支付', 0: '等待支付', 1: '等待处理', 2: '正在处理', 3: '交易成功', 4: '取消交易', 5: '已经退款', [-9]: '—',
@@ -164,7 +189,7 @@ function doSearch() {
 }
 
 function resetQuery() {
-  Object.assign(query, { page: 1, statusTab: '', keyword: '', type_id: null, create_range: null });
+  Object.assign(query, { page: 1, statusTab: '', keyword: '', type_id: '', create_range: null });
   load();
 }
 
@@ -217,6 +242,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.filter-form :deep(.el-form-item) { margin-bottom: 8px; }
+.quick-link { color: var(--mks-primary); cursor: pointer; }
 .muted { color: #909399; font-size: 12px; }
 </style>

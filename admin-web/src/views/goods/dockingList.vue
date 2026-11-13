@@ -1,14 +1,19 @@
 <template>
-  <div class="page-card">
-    <el-card shadow="never">
-      <template #header>
-        <div class="toolbar" style="margin-bottom: 0">
-          <el-button type="success" @click="openForm()">新增渠道</el-button>
-          <el-button type="warning" @click="doSyncStock(0)">全部渠道同步库存</el-button>
-          <el-button @click="load">刷新</el-button>
-        </div>
-      </template>
+  <mks-page>
+    <template #alert>
+      对接渠道用于自动发货与库存同步，「同步库存」会按渠道商品覆盖本地卡库；快捷入口：
+      <a class="quick-link" @click="goCfg('/goods/cardstock')">卡密库存</a>·
+      <a class="quick-link" @click="goCfg('/finance/dockingday')">渠道日结</a>
+    </template>
+
+    <template #toolbar>
+      <el-button size="small" type="success" @click="openForm()">新增渠道</el-button>
+      <el-button size="small" type="warning" plain @click="doSyncStock(0)">全部渠道同步库存</el-button>
+      <el-button size="small" plain @click="load">刷新</el-button>
+    </template>
+
       <el-table :data="list" border v-loading="loading">
+        <template #empty><mks-empty text="还没有对接渠道" hint="新增渠道并启用后，才能自动发货与同步库存" /></template>
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="name" label="渠道名称" min-width="160" />
         <el-table-column prop="type" label="协议" width="110" />
@@ -34,7 +39,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </mks-page>
 
     <!-- 渠道表单 -->
     <el-dialog v-model="formVisible" :title="form.id ? '编辑渠道' : '新增渠道'" width="560px">
@@ -90,17 +95,22 @@
         </el-table-column>
       </el-table>
     </el-dialog>
-  </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
   dockingIndex, dockingCreate, dockingSave, dockingDelete,
   dockingUserMoney, dockingGoodsList, dockingGoodsDual, goodsIndex,
 } from '@/api';
 import { dockingSyncStock } from '@/api/m3';
+import mksPage from '@/components/mksPage.vue';
+import mksEmpty from '@/components/mksEmpty.vue';
+
+const router = useRouter();
+const goCfg = (p) => router.push(p);
 
 const loading = ref(false);
 const saving = ref(false);
@@ -209,3 +219,7 @@ async function doDual(row) {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.quick-link { color: var(--mks-primary); cursor: pointer; }
+</style>
