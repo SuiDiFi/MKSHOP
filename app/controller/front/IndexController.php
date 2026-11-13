@@ -46,6 +46,9 @@ class IndexController extends BaseController
         } else {
             $hotQuery = $hotQuery->where('vip_id', 0);
         }
+        // 商品权限白名单（M7-P2：登录会员仅见授权商品；游客不受约束）
+        $memberId = (int) ($this->request->memberId ?? 0);
+        $hotQuery = \app\common\service\UserPriceService::applyRightScope($hotQuery, $memberId > 0 ? $memberId : null);
         $hot = $hotQuery->order('ishot desc, sort desc, id desc')
             ->limit(8)
             ->field('id,goods_name,goods_img,real_price,face_value,stock_num,sales_num,virtual_num,ishot,vip_id')

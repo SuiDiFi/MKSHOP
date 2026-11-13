@@ -13,12 +13,15 @@ Route::group('front', function () {
         Route::get('site/info', 'front.SiteController/info');            // 分站/主站信息与主题（M6）
         Route::post('member/login', 'front.MemberController/login');     // 会员登录
         Route::post('member/register', 'front.MemberController/register'); // 注册（M4：支持邀请码）
-        Route::get('goods/index', 'front.GoodsController/index');        // 在售商品列表
-        Route::get('goods/read/:id', 'front.GoodsController/read');      // 商品详情
+        Route::get('goods/index', 'front.GoodsController/index')        // 在售商品列表（可选登录：权限过滤+密价展示）
+            ->middleware([\mks\middleware\MemberTokenOptional::class]);
+        Route::get('goods/read/:id', 'front.GoodsController/read')      // 商品详情（可选登录：越权按不可见+密价展示）
+            ->middleware([\mks\middleware\MemberTokenOptional::class]);
         Route::get('goods/cates', 'front.GoodsController/cates');        // 分类导航
         Route::get('diy/pc_home', 'front.DiyController/pcHome');         // DIY 首页配置
         // M5：首页聚合 / 分类树 / 公告 / 帮助中心
-        Route::get('index/index', 'front.IndexController/index');        // 首页聚合数据
+        Route::get('index/index', 'front.IndexController/index')        // 首页聚合（可选登录：热门楼层权限过滤）
+            ->middleware([\mks\middleware\MemberTokenOptional::class]);
         Route::get('category/index', 'front.CategoryController/index');  // 分类树
         Route::get('notice/index', 'front.ArticleController/noticeIndex'); // 公告列表
         Route::get('notice/info/:id', 'front.ArticleController/info');   // 公告详情
