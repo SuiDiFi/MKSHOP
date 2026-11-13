@@ -30,11 +30,17 @@ class MemberController extends BaseController
             return $this->fail('账号已被禁用');
         }
         $jwt  = Jwt::issue('member', (int) $member->getAttr('id'));
-        $member->save([
+        $save = [
             'last_time'   => time(),
             'last_ip'     => (string) $this->request->ip(),
             'login_count' => (int) $member->getAttr('login_count') + 1,
-        ]);
+        ];
+        // 站点归属（M6）：首次在分站登录且未归属任何分站时绑定；已有归属不抢占
+        $vipId = (int) ($this->request->vipId ?? 0);
+        if ($vipId > 0 && (int) $member->getAttr('vip_id') === 0) {
+            $save['vip_id'] = $vipId;
+        }
+        $member->save($save);
         return $this->ok([
             'token'   => $jwt['token'] ?? '',
             'userinfo' => $member->hidden(['password', 'trade_password'])->toArray(),
@@ -81,6 +87,7 @@ class MemberController extends BaseController
             'reg_host'    => (string) $this->request->host(),
             'create_time' => time(),
             'pid'         => $pid,
+            'vip_id'      => (int) ($this->request->vipId ?? 0), // 站点归属（M6：按当前 Host 解析，主站为 0）
         ]);
         if ($pid > 0) {
             Member::where('id', $pid)->inc('child_num')->update();
