@@ -97,6 +97,12 @@ Route::group('admin', function () {
         Route::post('goods_tpl/create', 'admin.GoodsTplController/create');
         Route::post('goods_tpl/save/:id', 'admin.GoodsTplController/save');
         Route::post('goods_tpl/delete/:id', 'admin.GoodsTplController/delete');
+        // 定价模板（M7 对齐 KASUSHOU pricereadydata）
+        Route::get('price_ready/index', 'admin.PriceReadyController/index');
+        Route::post('price_ready/create', 'admin.PriceReadyController/create');
+        Route::post('price_ready/save/:id', 'admin.PriceReadyController/save');
+        Route::post('price_ready/delete/:id', 'admin.PriceReadyController/delete');
+        Route::get('price_ready/type_list', 'admin.PriceReadyController/type_list');
         Route::post('goods/goods_type', 'admin.GoodsController/goods_type');
         Route::post('goods/provide_type', 'admin.GoodsController/provide_type');
         Route::post('goods/default_tags_list', 'admin.GoodsController/default_tags_list');

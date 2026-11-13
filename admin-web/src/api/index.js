@@ -140,6 +140,15 @@ export const goodsTplDelete = (id) => mksRequest(`/admin/goods_tpl/delete/${id}`
 export const goodsTplModify = (id, field, value) =>
   mksRequest(`/admin/goods_tpl/modify/${id}`, 'POST', {}, { field, value });
 
+// ─── 定价模板（M7 对齐 KASUSHOU pricereadydata）───
+export const priceReadyIndex = (params) => mksRequest('/admin/price_ready/index', 'GET', params);
+export const priceReadyCreate = (form) => mksRequest('/admin/price_ready/create', 'POST', {}, { form });
+export const priceReadySave = (id, form) => mksRequest(`/admin/price_ready/save/${id}`, 'POST', {}, { form });
+export const priceReadyDelete = (id) => mksRequest(`/admin/price_ready/delete/${id}`, 'POST');
+export const priceReadyTypeList = () => mksRequest('/admin/price_ready/type_list', 'GET');
+export const priceReadyModify = (id, field, value) =>
+  mksRequest(`/admin/price_ready/modify/${id}`, 'POST', {}, { field, value });
+
 // ─── 订单管理（M2）───
 export const orderIndex = (params) => mksRequest('/admin/order/index', 'GET', params);
 export const orderInfo = (id) => mksRequest(`/admin/order/info/${id}`);
