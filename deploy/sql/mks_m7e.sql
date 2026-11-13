@@ -13,18 +13,18 @@ INSERT IGNORE INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`auth_ty
   (0, '渠道对账更新',   100, 'money_day_channel_update', 2, 'money_day/channel_update', 'POST', 0),
   (0, '客户对账导出',   100, 'money_day_export',  2, 'money_day/export',  'GET',  0);
 
--- 2. 可见菜单（挂财务(44)组下）
+-- 2. 可见菜单（挂财务分组下；parentId 取 name=Finance 分组行的 id）
 INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
-SELECT r.parentId, '财务对账', 96, 'MksMoneyDay', 'moneyday', 'file-list-line', '@/views/finance/moneyDay', 1, '', '', 0
+SELECT r.id, '财务对账', 96, 'MksMoneyDay', 'moneyday', 'file-list-line', '@/views/finance/moneyDay', 1, '', '', 0
 FROM `mks_admin_router` r
-WHERE r.`path` = 'finance' AND r.`auth_type` = 1
+WHERE r.`name` = 'Finance' AND r.`auth_type` = 1
   AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksMoneyDay' LIMIT 1) x)
 LIMIT 1;
 
 INSERT INTO `mks_admin_router` (`parentId`,`title`,`sort`,`name`,`path`,`icon`,`component`,`auth_type`,`api_url`,`methods`,`delete_time`)
-SELECT r.parentId, '渠道对账', 95, 'MksDockingDay', 'dockingday', 'coin', '@/views/finance/dockingDay', 1, '', '', 0
+SELECT r.id, '渠道对账', 95, 'MksDockingDay', 'dockingday', 'coin', '@/views/finance/dockingDay', 1, '', '', 0
 FROM `mks_admin_router` r
-WHERE r.`path` = 'finance' AND r.`auth_type` = 1
+WHERE r.`name` = 'Finance' AND r.`auth_type` = 1
   AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `mks_admin_router` WHERE `name` = 'MksDockingDay' LIMIT 1) x)
 LIMIT 1;
 

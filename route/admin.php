@@ -202,6 +202,14 @@ Route::group('admin', function () {
         Route::post('member_level/delete/:id', 'admin.MemberLevelController/delete');
         Route::post('member_level/modify/:id', 'admin.MemberLevelController/modify');
 
+        // 用户权限模板（M7 对齐 KASUSHOU 用户密价/限价/商品权限）
+        Route::get('user_price_tpl/index', 'admin.UserPriceTplController/index');
+        Route::get('user_price_tpl/read/:id', 'admin.UserPriceTplController/read');
+        Route::post('user_price_tpl/create', 'admin.UserPriceTplController/create');
+        Route::post('user_price_tpl/save/:id', 'admin.UserPriceTplController/save');
+        Route::post('user_price_tpl/delete/:id', 'admin.UserPriceTplController/delete');
+        Route::post('user_price_tpl/modify/:id', 'admin.UserPriceTplController/modify');
+
         // 提现审核（权限点 member_collect/*）
         Route::get('member_collect/index', 'admin.MemberCollectController/index');
         Route::post('member_collect/dual/:id', 'admin.MemberCollectController/dual');

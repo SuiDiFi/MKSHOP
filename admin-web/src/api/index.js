@@ -163,6 +163,15 @@ export const moneyDayExport = exportCsv;
 export const dockingDayIndex = (params) => mksRequest('/admin/money_day/channel_index', 'GET', params);
 export const dockingDayUpdate = (data) => mksRequest('/admin/money_day/channel_update', 'POST', {}, data);
 
+// ─── 用户权限模板（M7 对齐 KASUSHOU 用户密价/限价/商品权限）───
+export const userPriceTplIndex = (params) => mksRequest('/admin/user_price_tpl/index', 'GET', params);
+export const userPriceTplRead = (id) => mksRequest(`/admin/user_price_tpl/read/${id}`);
+export const userPriceTplCreate = (form) => mksRequest('/admin/user_price_tpl/create', 'POST', {}, { form });
+export const userPriceTplSave = (id, form) => mksRequest(`/admin/user_price_tpl/save/${id}`, 'POST', {}, { form });
+export const userPriceTplDelete = (id) => mksRequest(`/admin/user_price_tpl/delete/${id}`, 'POST');
+export const userPriceTplModify = (id, field, value) =>
+  mksRequest(`/admin/user_price_tpl/modify/${id}`, 'POST', {}, { field, value });
+
 // ─── 订单管理（M2）───
 export const orderIndex = (params) => mksRequest('/admin/order/index', 'GET', params);
 export const orderInfo = (id) => mksRequest(`/admin/order/info/${id}`);

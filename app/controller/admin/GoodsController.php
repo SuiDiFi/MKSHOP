@@ -42,6 +42,7 @@ class GoodsController extends Base
         'create_time'    => 'between',
         'docking_goods_id' => 'eq',
         'tpl_id'         => 'eq',
+        'id'             => 'in', // M7 用户权限模板按已绑定商品ID回显
     ];
 
     protected array $crudModifiable = [
