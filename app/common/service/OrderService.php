@@ -15,7 +15,6 @@ use app\common\model\CardCate;
 use app\common\model\Goods;
 use app\common\model\GoodsStock;
 use app\common\model\Member;
-use app\common\model\MemberLevel;
 use app\common\model\MemberMoney;
 use app\common\model\Order;
 use app\common\model\OrderDolog;
@@ -82,7 +81,7 @@ class OrderService
         $quantity2 = $quantity;
         $basePrice = (string) $goods->getAttr('real_price');
         $price = $basePrice;
-        $priceTplContent = null; // 用户密价模板快照（M7-P2）
+        $priceQuoteContent = null; // 取价快照（M7-P2 密价 / P2-G 定价模板/会员折扣）
         // 分站上下文（M6）：三级定价（商品级覆盖 > 分站比例 > 基准价）；站点内不叠加会员折扣/密价
         $vipSite = $input['vip_site'] ?? null;
         $vipFields = [
@@ -111,24 +110,19 @@ class OrderService
                     'rate'       => (string) $vipSite->getAttr('rate'),
                 ], JSON_UNESCAPED_UNICODE),
             ];
-        } elseif ($member !== null) {
-            // 用户密价模板（M7-P2）：命中即用模板价，不叠加会员等级折扣（避免双重让价）
-            $close = UserPriceService::closePrice($goods, (int) $member->getAttr('id'));
-            if ($close !== null) {
-                $price = $close['price'];
-                $priceTplContent = json_encode([
-                    'source' => 'close_tpl',
-                    'tpl_id' => $close['tpl_id'],
-                    'mode'   => $close['mode'],
-                    'value'  => $close['value'],
-                    'base'   => $close['base'],
+        } else {
+            // 主站取价唯一入口（P2-G）：密价 > 定价模板 > 会员等级折扣 > 平台基准价
+            // 分站分支不动（站点内不叠加密价/模板/折扣）
+            $quote = UserPriceService::quote($goods, $member);
+            $price = $quote['price'];
+            if ($quote['source'] !== UserPriceService::SRC_BASE) {
+                $priceQuoteContent = json_encode([
+                    'source' => $quote['source'],
+                    'tpl_id' => $quote['tpl_id'],
+                    'mode'   => $quote['mode'],
+                    'value'  => $quote['value'],
+                    'base'   => $quote['base'],
                 ], JSON_UNESCAPED_UNICODE);
-            } elseif ((int) $member->getAttr('level_id') > 0) {
-                // 会员折扣价（M4）：member_level.pay_rate 语义 0=无折扣；0~100 为折后百分比（95 = 95 折）
-                $payRate = (string) MemberLevel::where('id', (int) $member->getAttr('level_id'))->value('pay_rate');
-                if (bccomp($payRate, '0', 2) > 0 && bccomp($payRate, '100', 2) < 0) {
-                    $price = bcdiv(bcmul($price, $payRate, 6), '100', 4);
-                }
             }
         }
         // 统一校验（服务层唯一入口）：商品权限白名单 + 最低售价（限价）
@@ -166,7 +160,7 @@ class OrderService
             'recharge_url'        => (string) $goods->getAttr('recharge_url'),
             'recharge_time_type'  => (int) $goods->getAttr('recharge_time_type'),
             'recharge_time_value' => (int) $goods->getAttr('recharge_time_value'),
-            'price_set_content'   => $priceTplContent,
+            'price_set_content'   => $priceQuoteContent,
             'mark'                => (string) ($input['mark'] ?? ''),
             'can_back'            => (int) $goods->getAttr('can_back'),
             'create_time'         => time(),

@@ -17,16 +17,36 @@ class PriceReadyController extends Base
     protected string $crudModel = GoodsReadyPrice::class;
 
     protected array $crudSearchable = [
-        'name'   => 'like',
-        'type'   => 'eq',
-        'status' => 'eq',
+        'name'     => 'like',
+        'type'     => 'eq',
+        'status'   => 'eq',
+        'goods_id' => 'eq',
     ];
 
-    protected array $crudModifiable = ['name', 'type', 'cha_price', 'start_price', 'end_price', 'price_arr', 'sort', 'status'];
+    protected array $crudModifiable = ['name', 'type', 'cha_price', 'start_price', 'end_price', 'price_arr', 'sort', 'status', 'goods_id'];
 
-    protected array $crudFields = ['name', 'type', 'cha_price', 'start_price', 'end_price', 'price_arr', 'sort', 'status', 'is_default'];
+    protected array $crudFields = ['name', 'type', 'cha_price', 'start_price', 'end_price', 'price_arr', 'sort', 'status', 'is_default', 'goods_id', 'vip_id'];
 
     protected string $crudOrder = 'sort desc, id desc';
+
+    /**
+     * 列表：补充绑定商品名称（goods_id=0 表示未绑定，不参与取价）
+     */
+    public function index()
+    {
+        $result = $this->crudIndex();
+        $data   = $result->getData();
+        $list   = (array) ($data['data']['list'] ?? []);
+        $gids   = array_values(array_unique(array_filter(array_map('intval', array_column($list, 'goods_id')))));
+        $names  = $gids === [] ? [] : \think\facade\Db::name('goods')->whereIn('id', $gids)->column('goods_name', 'id');
+        foreach ($list as &$row) {
+            $gid = (int) ($row['goods_id'] ?? 0);
+            $row['goods_name'] = $gid > 0 ? (string) ($names[$gid] ?? '') : '';
+        }
+        unset($row);
+        $data['data']['list'] = $list;
+        return json_ok($data['data'], $data['msg']);
+    }
 
     /**
      * 类型字典（对齐 KASUSHOU「类型」下拉）
@@ -46,6 +66,9 @@ class PriceReadyController extends Base
     public function create()
     {
         $data = $this->crudFormData();
+        if (($err = $this->checkGoodsId($data)) !== null) {
+            return $this->fail($err);
+        }
         $data['price_arr'] = $this->normalizePriceArr($data['price_arr'] ?? null);
         return $this->crudCreate($data);
     }
@@ -57,9 +80,24 @@ class PriceReadyController extends Base
             return $this->fail('定价模板不存在');
         }
         $data = $this->crudFormData();
+        if (($err = $this->checkGoodsId($data)) !== null) {
+            return $this->fail($err);
+        }
         $data['price_arr'] = $this->normalizePriceArr($data['price_arr'] ?? null);
         $row->save($data);
         return $this->ok([], '保存成功');
+    }
+
+    /**
+     * 绑定商品校验（goods_id=0 表示不绑定、不参与取价）
+     */
+    protected function checkGoodsId(array $data): ?string
+    {
+        $gid = (int) ($data['goods_id'] ?? 0);
+        if ($gid > 0 && \app\common\model\Goods::findOrEmpty($gid)->isEmpty()) {
+            return '绑定商品不存在';
+        }
+        return null;
     }
 
     /**

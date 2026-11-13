@@ -7,6 +7,7 @@ declare (strict_types = 1);
 namespace app\controller\front;
 
 use app\common\model\Goods;
+use app\common\model\Member;
 use app\common\service\OrderService;
 use mks\BaseController;
 
@@ -86,15 +87,17 @@ class GoodsController extends BaseController
             }
             unset($r);
         }
-        // 会员密价展示（M7-P2：登录会员命中模板时列表价同步为密价，与下单取价同源）
-        if (!$vipSite && $memberId > 0) {
-            $closeMap = \app\common\service\UserPriceService::closePriceMap($list, $memberId);
+        // 主站取价展示（P2-G：密价/定价模板/会员折扣统一来自 UserPriceService::quoteMap，与下单同源）
+        if (!$vipSite) {
+            $member = $memberId > 0 ? Member::findOrEmpty($memberId) : null;
+            $quotes = \app\common\service\UserPriceService::quoteMap($list, ($member === null || $member->isEmpty()) ? null : $member);
             foreach ($list as &$r) {
-                $hit = $closeMap[(int) $r['id']] ?? null;
-                if ($hit !== null) {
-                    $r['base_price'] = (string) $r['real_price'];
-                    $r['real_price'] = $hit['price'];
-                    $r['close_tpl']  = $hit['tpl_id'];
+                $hit = $quotes[(int) $r['id']] ?? null;
+                if ($hit !== null && $hit['source'] !== \app\common\service\UserPriceService::SRC_BASE) {
+                    $r['base_price']   = (string) $r['real_price'];
+                    $r['real_price']   = $hit['price'];
+                    $r['price_source'] = $hit['source'];
+                    $r['price_tpl_id'] = $hit['tpl_id'];
                 }
             }
             unset($r);
@@ -130,13 +133,15 @@ class GoodsController extends BaseController
             $data['base_price'] = $p['base'];
             $data['real_price'] = $p['price'];
             $data['vip_add']    = $p['add'];
-        } elseif ($memberId > 0) {
-            // 会员密价展示（与下单取价同源）
-            $close = \app\common\service\UserPriceService::closePrice($goods, $memberId);
-            if ($close !== null) {
-                $data['base_price'] = (string) $data['real_price'];
-                $data['real_price'] = $close['price'];
-                $data['close_tpl']  = $close['tpl_id'];
+        } else {
+            // 主站取价展示（P2-G：密价 > 定价模板 > 会员折扣 > 基准价，与下单同源）
+            $member = $memberId > 0 ? Member::findOrEmpty($memberId) : null;
+            $quote  = \app\common\service\UserPriceService::quote($goods, ($member === null || $member->isEmpty()) ? null : $member);
+            if ($quote['source'] !== \app\common\service\UserPriceService::SRC_BASE) {
+                $data['base_price']   = (string) $data['real_price'];
+                $data['real_price']   = $quote['price'];
+                $data['price_source'] = $quote['source'];
+                $data['price_tpl_id'] = $quote['tpl_id'];
             }
         }
         // 实时库存（卡密商品以卡库余量为准）

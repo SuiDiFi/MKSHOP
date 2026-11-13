@@ -67,6 +67,19 @@ class IndexController extends BaseController
                 $h['real_price'] = $p['price'];
             }
             unset($h);
+        } else {
+            // 主站取价展示（P2-G：与下单同源，密价 > 定价模板 > 会员折扣 > 基准价）
+            $member = $memberId > 0 ? \app\common\model\Member::findOrEmpty($memberId) : null;
+            $quotes = \app\common\service\UserPriceService::quoteMap($hot, ($member === null || $member->isEmpty()) ? null : $member);
+            foreach ($hot as &$h) {
+                $hit = $quotes[(int) $h['id']] ?? null;
+                if ($hit !== null && $hit['source'] !== \app\common\service\UserPriceService::SRC_BASE) {
+                    $h['base_price']   = (string) $h['real_price'];
+                    $h['real_price']   = $hit['price'];
+                    $h['price_source'] = $hit['source'];
+                }
+            }
+            unset($h);
         }
 
         $notices = CmsArticle::where('type', CmsArticle::TYPE_NOTICE)

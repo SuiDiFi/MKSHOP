@@ -1,21 +1,31 @@
 <?php
 // +----------------------------------------------------------------------
-// | 用户密价/限价/权限模板服务（M7-P2 生效逻辑 · 唯一入口）
+// | 取价/限价/权限模板服务（M7-P2 + P2-G 生效逻辑 · 唯一入口）
 // |
-// | 模板表：mks_user_price_tpl（type:1=密价 2=限价 3=权限；status=1 启用）
-// | 绑定表：mks_user_price_tpl_user / mks_user_price_tpl_goods
+// | 数据源：
+// |   用户模板 mks_user_price_tpl（type:1=密价 2=限价 3=权限；status=1 启用）
+// |   + 绑定表 mks_user_price_tpl_user / mks_user_price_tpl_goods
+// |   定价模板 mks_goods_ready_price（type:1=比例加价% 2=固定加价 3=固定售价；price_arr=等级价格档）
 // |
-// | 生效规则（红线，改动须同步本注释与汇报文档）：
-// |   1. 模板必须同时绑定用户与商品（任一端为空 = 不生效），防误配全站生效
-// |   2. 密价仅在主站上下文生效（分站走 VipPriceService 三级定价，互不叠加）
-// |   3. 取价优先级：分站价 > 密价模板 > 会员等级折扣 > 平台基准价
-// |      命中密价时不再叠加会员等级折扣（二者互斥，避免双重让价）
-// |   4. 多个密价模板同时命中：计算后价格最低者胜（对用户最优），同价取模板 id 最小
-// |   5. 多个限价模板同时命中：取最高下限（最严格者），下单最终单价 < 下限 → 拒绝
+// | 取价优先级（主站 quote() 唯一入口；分站整体优先，走 VipPriceService，不进入 quote）：
+// |   分站价 > 用户密价 > 定价模板 > 会员等级折扣 > 平台基准价 real_price
+// |   1. 分站：VipPriceService 三级定价（商品级覆盖 > 分站比例 > 基准价）；
+// |      分站内不叠加密价/定价模板/会员折扣
+// |   2. 密价：模板必须同时绑定用户与商品（任一端为空 = 不生效），防误配全站生效；
+// |      基于平台基准价 real_price 计算；多模板命中取最低价（同价取 id 小）；
+// |      命中后不再叠加定价模板与会员折扣（最具体者胜，避免双重让价）
+// |   3. 定价模板：仅"商品显式绑定"生效（goods_ready_price.goods_id=商品 id、status=1、vip_id=0）；
+// |      goods_id=0 的全局预置行（如 id=1「默认预置定价」）不参与取价，避免误配全站改价；
+// |      同商品多条绑定按 sort desc, id desc 取第一条（确定性）；
+// |      price_arr 含该会员等级价 {"等级id":价格} → 直接取等级价（mode=9），不再叠加折扣；
+// |      否则按 type 对基准价计算；命中后不再叠加会员折扣（模板价即标准售价）；
+// |      游客同样使用绑定模板价（商品标准售价，与下单/列表/详情同源）
+// |   4. 会员折扣：member_level.pay_rate（0=无折扣，0~100=折后百分比）作用于基准价
+// |   5. 多个限价模板命中：取最高下限（最严格者），下单最终单价 < 下限 → 拒绝
 // |   6. 权限=白名单：用户命中任一启用权限模板 → 可见集合 = 各模板绑定商品并集，
 // |      列表/详情/下单三处同源过滤；白名单外商品一律按"商品不存在或已下架"处理
-// |   7. 校验唯一入口：OrderService::createOrder → assertOrderAllowed()（服务层），
-// |      前台控制器只做可见性过滤与展示，不各自写校验
+// |   7. 校验唯一入口：OrderService::createOrder → assertOrderAllowed()（服务层）；
+// |      前台控制器只做可见性过滤与展示（quote/quoteMap），不各自写价格计算与校验
 // +----------------------------------------------------------------------
 declare (strict_types = 1);
 
@@ -23,6 +33,7 @@ namespace app\common\service;
 
 use app\common\model\Goods;
 use app\common\model\Member;
+use app\common\model\MemberLevel;
 use think\facade\Db;
 
 class UserPriceService
@@ -30,6 +41,15 @@ class UserPriceService
     public const TPL_CLOSE = 1; // 会员密价
     public const TPL_LIMIT = 2; // 销售限价
     public const TPL_RIGHT = 3; // 商品权限
+
+    /** 定价模板：price_arr 命中会员等级价时的伪 mode */
+    public const READY_MODE_LEVEL = 9;
+
+    /** 取价来源（写入订单 price_set_content 与前台展示） */
+    public const SRC_BASE     = 'base';       // 平台基准价
+    public const SRC_DISCOUNT = 'discount';   // 会员等级折扣
+    public const SRC_CLOSE    = 'close_tpl';  // 用户密价模板
+    public const SRC_READY    = 'ready_tpl';  // 定价模板
 
     /**
      * 用户绑定的启用模板 id 集（type 过滤；软删/停用排除）
@@ -153,6 +173,175 @@ class UserPriceService
             }
         }
         return $map;
+    }
+
+    /**
+     * 定价模板批量取价（仅商品显式绑定生效；goods_id=0 全局预置行不参与取价）
+     * @param array $goodsList 每行须含 id 与 real_price
+     * @return array<int, array{price:string,tpl_id:int,mode:int,value:string}> goods_id => 命中
+     */
+    public static function readyPriceMap(array $goodsList, int $levelId = 0): array
+    {
+        if ($goodsList === []) {
+            return [];
+        }
+        $goodsIds = array_map('intval', array_column($goodsList, 'id'));
+        $rows = Db::name('goods_ready_price')
+            ->where('goods_id', 'in', $goodsIds)
+            ->where('vip_id', 0)
+            ->where('status', 1)
+            ->field('id,goods_id,type,cha_price,price_arr')
+            ->order('sort desc, id desc')
+            ->select()->toArray();
+        if ($rows === []) {
+            return [];
+        }
+        $bases = [];
+        foreach ($goodsList as $g) {
+            $bases[(int) $g['id']] = (string) ($g['real_price'] ?? '0');
+        }
+        $map = [];
+        foreach ($rows as $r) {
+            $gid = (int) $r['goods_id'];
+            if (isset($map[$gid])) {
+                continue; // 已按 sort desc, id desc 取到该商品最高优先模板
+            }
+            $base  = $bases[$gid] ?? '0';
+            $type  = (int) $r['type'];
+            $value = (string) $r['cha_price'];
+            $price = self::calcReady($base, $type, $value);
+            $mode  = $type;
+            $arr   = json_decode((string) $r['price_arr'], true);
+            if ($levelId > 0 && is_array($arr) && isset($arr[(string) $levelId]) && is_numeric($arr[(string) $levelId])) {
+                $levelPrice = (string) $arr[(string) $levelId];
+                if (bccomp($levelPrice, '0', 4) > 0) {
+                    $price = bcadd($levelPrice, '0', 4);
+                    $mode  = self::READY_MODE_LEVEL;
+                    $value = $levelPrice;
+                }
+            }
+            $map[$gid] = ['price' => $price, 'tpl_id' => (int) $r['id'], 'mode' => $mode, 'value' => $value];
+        }
+        return $map;
+    }
+
+    /**
+     * 定价模板加价计算（type 1=比例加价% 2=固定加价 3=固定售价）
+     */
+    protected static function calcReady(string $base, int $type, string $value): string
+    {
+        $price = match ($type) {
+            1 => bcadd($base, bcmul($base, bcdiv($value, '100', 6), 4), 4),
+            2 => bcadd($base, $value, 4),
+            3 => $value,
+            default => $base,
+        };
+        if (bccomp($price, '0', 4) < 0) {
+            $price = '0.0000';
+        }
+        return $price;
+    }
+
+    /**
+     * 定价模板单品取价（未绑定返回 null）
+     */
+    public static function readyPrice(Goods $goods, int $levelId = 0): ?array
+    {
+        $gid = (int) $goods->getAttr('id');
+        $map = self::readyPriceMap([['id' => $gid, 'real_price' => (string) $goods->getAttr('real_price')]], $levelId);
+        return $map[$gid] ?? null;
+    }
+
+    /**
+     * 主站取价唯一入口（分站由调用方先行走 VipPriceService，不进入本方法）
+     * 优先级：密价 > 定价模板 > 会员等级折扣 > 基准价
+     * @return array{price:string, source:string, tpl_id:int, mode:int, value:string, base:string, level_id:int}
+     */
+    public static function quote(Goods $goods, ?Member $member): array
+    {
+        $base    = (string) $goods->getAttr('real_price');
+        $uid     = $member !== null ? (int) $member->getAttr('id') : 0;
+        $levelId = $member !== null ? (int) $member->getAttr('level_id') : 0;
+        $out = [
+            'price'    => $base,
+            'source'   => self::SRC_BASE,
+            'tpl_id'   => 0,
+            'mode'     => 0,
+            'value'    => '0',
+            'base'     => $base,
+            'level_id' => $levelId,
+        ];
+        // 1) 用户密价（用户+商品双绑定，最具体）
+        if ($uid > 0) {
+            $close = self::closePrice($goods, $uid);
+            if ($close !== null) {
+                return array_merge($out, [
+                    'price'  => $close['price'],
+                    'source' => self::SRC_CLOSE,
+                    'tpl_id' => $close['tpl_id'],
+                    'mode'   => $close['mode'],
+                    'value'  => $close['value'],
+                ]);
+            }
+        }
+        // 2) 定价模板（商品标准售价；含会员等级价格档）
+        $ready = self::readyPrice($goods, $levelId);
+        if ($ready !== null) {
+            return array_merge($out, [
+                'price'  => $ready['price'],
+                'source' => self::SRC_READY,
+                'tpl_id' => $ready['tpl_id'],
+                'mode'   => $ready['mode'],
+                'value'  => $ready['value'],
+            ]);
+        }
+        // 3) 会员等级折扣（不与密价/定价模板叠加）
+        if ($uid > 0 && $levelId > 0) {
+            $payRate = (string) MemberLevel::where('id', $levelId)->value('pay_rate');
+            if (bccomp($payRate, '0', 2) > 0 && bccomp($payRate, '100', 2) < 0) {
+                return array_merge($out, [
+                    'price'  => bcdiv(bcmul($base, $payRate, 6), '100', 4),
+                    'source' => self::SRC_DISCOUNT,
+                    'value'  => $payRate,
+                ]);
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * 批量取价（列表展示用，与 quote 同源同优先级）
+     * @param array $goodsList 每行须含 id 与 real_price
+     * @return array<int, array{price:string, source:string, tpl_id:int}>
+     */
+    public static function quoteMap(array $goodsList, ?Member $member): array
+    {
+        if ($goodsList === []) {
+            return [];
+        }
+        $uid     = $member !== null ? (int) $member->getAttr('id') : 0;
+        $levelId = $member !== null ? (int) $member->getAttr('level_id') : 0;
+        $closeMap = $uid > 0 ? self::closePriceMap($goodsList, $uid) : [];
+        $readyMap = self::readyPriceMap($goodsList, $levelId);
+        $payRate  = '';
+        if ($uid > 0 && $levelId > 0) {
+            $payRate = (string) MemberLevel::where('id', $levelId)->value('pay_rate');
+        }
+        $out = [];
+        foreach ($goodsList as $g) {
+            $gid  = (int) $g['id'];
+            $base = (string) ($g['real_price'] ?? '0');
+            if (isset($closeMap[$gid])) {
+                $out[$gid] = ['price' => $closeMap[$gid]['price'], 'source' => self::SRC_CLOSE, 'tpl_id' => $closeMap[$gid]['tpl_id']];
+            } elseif (isset($readyMap[$gid])) {
+                $out[$gid] = ['price' => $readyMap[$gid]['price'], 'source' => self::SRC_READY, 'tpl_id' => $readyMap[$gid]['tpl_id']];
+            } elseif ($payRate !== '' && bccomp($payRate, '0', 2) > 0 && bccomp($payRate, '100', 2) < 0) {
+                $out[$gid] = ['price' => bcdiv(bcmul($base, $payRate, 6), '100', 4), 'source' => self::SRC_DISCOUNT, 'tpl_id' => 0];
+            } else {
+                $out[$gid] = ['price' => $base, 'source' => self::SRC_BASE, 'tpl_id' => 0];
+            }
+        }
+        return $out;
     }
 
     /**

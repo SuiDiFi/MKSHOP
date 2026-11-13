@@ -16,6 +16,12 @@
       <el-table :data="list" border v-loading="loading">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="名称" min-width="180" />
+        <el-table-column label="绑定商品" min-width="180">
+          <template #default="{ row }">
+            <span v-if="Number(row.goods_id) > 0">{{ row.goods_name || ('#' + row.goods_id) }}</span>
+            <span v-else class="muted">未绑定（不参与取价）</span>
+          </template>
+        </el-table-column>
         <el-table-column label="类型" width="150">
           <template #default="{ row }">{{ typeLabel(row.type) }}</template>
         </el-table-column>
@@ -53,6 +59,13 @@
     <el-dialog v-model="formVisible" :title="form.id ? '编辑定价模板' : '添加定价模板'" width="640px" top="6vh">
       <el-form label-width="110px">
         <el-form-item label="名称" required><el-input v-model="form.name" maxlength="100" style="width: 320px" /></el-form-item>
+        <el-form-item label="绑定商品">
+          <el-select v-model="form.goods_id" filterable remote clearable :remote-method="searchGoods" :loading="goodsLoading"
+            placeholder="不绑定则不参与取价" style="width: 320px">
+            <el-option v-for="g in goodsOptions" :key="g.id" :label="g.goods_name" :value="g.id" />
+          </el-select>
+          <span class="muted" style="margin-left: 8px">仅绑定商品参与取价</span>
+        </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="form.type" style="width: 220px" @change="form.cha_price = 0">
             <el-option v-for="t in typeOptions" :key="t.code" :label="t.label" :value="t.code" />
@@ -91,16 +104,18 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { priceReadyIndex, priceReadyCreate, priceReadySave, priceReadyDelete, priceReadyTypeList, priceReadyModify } from '@/api';
+import { priceReadyIndex, priceReadyCreate, priceReadySave, priceReadyDelete, priceReadyTypeList, priceReadyModify, goodsIndex } from '@/api';
 
 const loading = ref(false);
 const saving = ref(false);
 const list = ref([]);
 const total = ref(0);
 const typeOptions = ref([]);
+const goodsOptions = ref([]);
+const goodsLoading = ref(false);
 const query = reactive({ page: 1, limit: 15, keyword: '', type: null });
 const formVisible = ref(false);
-const form = reactive({ id: 0, name: '', type: 1, cha_price: 0, start_price: 0, end_price: 0, sort: 100, status: 1, priceRows: [] });
+const form = reactive({ id: 0, name: '', goods_id: 0, type: 1, cha_price: 0, start_price: 0, end_price: 0, sort: 100, status: 1, priceRows: [] });
 
 const ruleLabel = computed(() => ({ 1: '加价比例（%）', 2: '固定加价（元）', 3: '固定售价（元）' }[Number(form.type)] || '加价规则'));
 const typeLabel = (t) => typeOptions.value.find((x) => Number(x.code) === Number(t))?.label || t;
@@ -141,9 +156,24 @@ function resetQuery() {
   doSearch();
 }
 
+async function searchGoods(kw) {
+  goodsLoading.value = true;
+  try {
+    const where = kw ? [{ field: 'goods_name', op: 'like', value: kw }] : [];
+    const res = await goodsIndex({ page: 1, limit: 20, where: JSON.stringify(where) });
+    goodsOptions.value = (res.data.list || []).map((g) => ({ id: Number(g.id), goods_name: g.goods_name }));
+  } finally {
+    goodsLoading.value = false;
+  }
+}
+
 async function openForm(row) {
   form.id = row ? row.id : 0;
   form.name = row ? row.name : '';
+  form.goods_id = row ? Number(row.goods_id || 0) : 0;
+  if (form.goods_id > 0 && row.goods_name) {
+    goodsOptions.value = [{ id: form.goods_id, goods_name: row.goods_name }];
+  }
   form.type = row ? Number(row.type) : 1;
   form.cha_price = row ? Number(row.cha_price) : 0;
   form.start_price = row ? Number(row.start_price) : 0;
@@ -165,7 +195,8 @@ async function doSave() {
       if (Number(r.level) > 0) priceArr[String(r.level)] = String(r.price);
     }
     const payload = {
-      name: form.name, type: form.type, cha_price: String(form.cha_price),
+      name: form.name, goods_id: Number(form.goods_id || 0), vip_id: 0,
+      type: form.type, cha_price: String(form.cha_price),
       start_price: String(form.start_price), end_price: String(form.end_price),
       price_arr: JSON.stringify(priceArr), sort: form.sort, status: form.status,
     };
@@ -193,6 +224,7 @@ async function doDelete(id) {
 onMounted(async () => {
   const t = await priceReadyTypeList();
   typeOptions.value = t.data || [];
+  searchGoods('');
   load();
 });
 </script>
