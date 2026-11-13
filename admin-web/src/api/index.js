@@ -131,6 +131,15 @@ export const tagsDelete = (id) => mksRequest(`/admin/goods_tags/delete/${id}`, '
 export const tagsModify = (id, field, value) =>
   mksRequest(`/admin/goods_tags/modify/${id}`, 'POST', {}, { field, value });
 
+// ─── 商品下单输入项模板（M7 对齐 KASUSHOU goods_tpl）───
+export const goodsTplIndex = (params) => mksRequest('/admin/goods_tpl/index', 'GET', params);
+export const goodsTplList = () => mksRequest('/admin/goods_tpl/list', 'POST');
+export const goodsTplCreate = (form) => mksRequest('/admin/goods_tpl/create', 'POST', {}, { form });
+export const goodsTplSave = (id, form) => mksRequest(`/admin/goods_tpl/save/${id}`, 'POST', {}, { form });
+export const goodsTplDelete = (id) => mksRequest(`/admin/goods_tpl/delete/${id}`, 'POST');
+export const goodsTplModify = (id, field, value) =>
+  mksRequest(`/admin/goods_tpl/modify/${id}`, 'POST', {}, { field, value });
+
 // ─── 订单管理（M2）───
 export const orderIndex = (params) => mksRequest('/admin/order/index', 'GET', params);
 export const orderInfo = (id) => mksRequest(`/admin/order/info/${id}`);

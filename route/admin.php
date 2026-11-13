@@ -91,6 +91,12 @@ Route::group('admin', function () {
         Route::post('goods/save_goods_stock', 'admin.GoodsController/save_goods_stock');
         Route::post('goods/status_type', 'admin.GoodsController/status_type');
         Route::get('goods/export', 'admin.GoodsController/export');              // M7 商品导出 CSV
+        // 商品下单输入项模板（M7 对齐 KASUSHOU 商品模板）
+        Route::get('goods_tpl/index', 'admin.GoodsTplController/index');
+        Route::post('goods_tpl/list', 'admin.GoodsTplController/list');
+        Route::post('goods_tpl/create', 'admin.GoodsTplController/create');
+        Route::post('goods_tpl/save/:id', 'admin.GoodsTplController/save');
+        Route::post('goods_tpl/delete/:id', 'admin.GoodsTplController/delete');
         Route::post('goods/goods_type', 'admin.GoodsController/goods_type');
         Route::post('goods/provide_type', 'admin.GoodsController/provide_type');
         Route::post('goods/default_tags_list', 'admin.GoodsController/default_tags_list');

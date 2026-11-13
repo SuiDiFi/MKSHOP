@@ -165,6 +165,13 @@
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="下单模板">
+              <el-select v-model="form.tpl_id" clearable style="width: 100%" placeholder="不使用模板">
+                <el-option v-for="t in tplOptions" :key="t.id" :label="t.name" :value="t.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="8"><el-form-item label="库存预警值"><el-input-number v-model="form.warn_num" :min="0" style="width: 100%" /></el-form-item></el-col>
           <el-col :span="8"><el-form-item label="仅余额支付"><el-switch v-model="form.only_balance" :active-value="1" :inactive-value="0" /></el-form-item></el-col>
           <el-col :span="24"><el-form-item label="商品主图"><el-input v-model="form.goods_img" placeholder="图片 URL（M5 接入上传组件）" /></el-form-item></el-col>
@@ -186,7 +193,7 @@ import { ElMessage } from 'element-plus';
 import {
   goodsIndex, goodsRead, goodsCreate, goodsSave, goodsDelete, goodsDestroy, goodsRestore,
   goodsModify, goodsStatusType, goodsGoodsType, goodsProvideType, goodsDefaultTags, categoryList, tagsList,
-  exportCsv,
+  goodsTplList, exportCsv,
 } from '@/api';
 
 const loading = ref(false);
@@ -198,6 +205,7 @@ const statusOptions = ref([]);
 const typeOptions = ref([]);
 const provideOptions = ref([]);
 const tagsOptions = ref([]);
+const tplOptions = ref([]);
 const categoryTree = ref([]);
 const filterExpanded = ref(false);
 const query = reactive({
@@ -209,7 +217,7 @@ const query = reactive({
 const formVisible = ref(false);
 const emptyForm = () => ({
   id: 0, goods_name: '', goods_no: '', goods_type: 1, provide_type: 1, category_ids: [],
-  tags_id: 0, face_value: 0, real_price: 0, cost_value: 0, start_count: 1, end_count: 1,
+  tags_id: 0, tpl_id: 0, face_value: 0, real_price: 0, cost_value: 0, start_count: 1, end_count: 1,
   num_count: '1', warn_num: 0, only_balance: 0, goods_img: '', goods_info: '', goods_notice: '', status: 1,
 });
 const form = reactive(emptyForm());
@@ -316,14 +324,15 @@ async function batchRecycle() {
 }
 
 async function loadEnums() {
-  const [st, gt, pt, tg, ct] = await Promise.all([
-    goodsStatusType(), goodsGoodsType(), goodsProvideType(), goodsDefaultTags(), categoryList(),
+  const [st, gt, pt, tg, ct, tpl] = await Promise.all([
+    goodsStatusType(), goodsGoodsType(), goodsProvideType(), goodsDefaultTags(), categoryList(), goodsTplList(),
   ]);
   statusOptions.value = st.data || [];
   typeOptions.value = gt.data || [];
   provideOptions.value = pt.data || [];
   tagsOptions.value = tg.data || [];
   categoryTree.value = ct.data || [];
+  tplOptions.value = tpl.data || [];
 }
 
 async function openForm(row) {

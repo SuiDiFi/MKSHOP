@@ -41,6 +41,7 @@ class GoodsController extends Base
         'real_price'     => 'between',
         'create_time'    => 'between',
         'docking_goods_id' => 'eq',
+        'tpl_id'         => 'eq',
     ];
 
     protected array $crudModifiable = [
@@ -55,7 +56,7 @@ class GoodsController extends Base
         'recharge_url', 'demo_url', 'recharge_time_type', 'recharge_time_value',
         'status', 'stop_reason', 'goods_imgs', 'goods_img', 'provide_type', 'category_ids',
         'tags_id', 'check_status', 'virtual_num', 'stock_num', 'warn_num', 'sort',
-        'only_balance', 'can_back', 'is_batch', 'goods_tags', 'is_recharge',
+        'only_balance', 'can_back', 'is_batch', 'goods_tags', 'is_recharge', 'tpl_id',
     ];
 
     protected string $crudOrder = 'sort desc, id desc';
