@@ -36,6 +36,7 @@ class OrderController extends BaseController
             $order = OrderService::createOrder($member, $goods, [
                 'quantity'         => (int) $this->request->param('quantity', 1),
                 'recharge_account' => (string) $this->request->param('recharge_account', ''),
+                'tpl_inputs'       => $this->request->param('tpl_inputs', []),
                 'mark'             => (string) $this->request->param('mark', ''),
                 'user_where'       => 'pc',
                 'ip'               => (string) $this->request->ip(),

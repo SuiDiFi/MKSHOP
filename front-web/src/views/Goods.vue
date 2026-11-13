@@ -27,8 +27,14 @@
               </span>
             </div>
 
-            <el-form label-width="80px" style="max-width: 460px">
-              <el-form-item v-if="needAccount" label="充值账号">
+            <el-form label-width="100px" style="max-width: 460px">
+              <template v-if="tplInputs.length">
+                <el-form-item v-for="(it, i) in tplInputs" :key="i" :label="it.label" :required="Number(it.required) === 1">
+                  <el-input v-model="tplValues[i]" maxlength="200"
+                    :placeholder="it.placeholder || ('请输入' + it.label)" />
+                </el-form-item>
+              </template>
+              <el-form-item v-else-if="needAccount" label="充值账号">
                 <el-input v-model="buyForm.recharge_account" placeholder="请输入充值账号" />
               </el-form-item>
               <el-form-item label="购买数量">
@@ -71,6 +77,10 @@ const goods = ref({});
 const loading = ref(true);
 const buying = ref(false);
 const buyForm = ref({ quantity: 1, recharge_account: '' });
+const tplValues = ref([]);
+
+// 商品绑定下单模板时按模板定义渲染输入项（未绑定则维持原有输入）
+const tplInputs = computed(() => (goods.value.tpl && Array.isArray(goods.value.tpl.inputs)) ? goods.value.tpl.inputs : []);
 
 const needAccount = computed(() => Number(goods.value.goods_type) === 2);
 const totalAmount = computed(() => {
@@ -86,18 +96,31 @@ const doBuy = async () => {
     router.push({ name: 'Login', query: { redirect: route.fullPath } });
     return;
   }
-  if (needAccount.value && !buyForm.value.recharge_account) {
+  if (tplInputs.value.length) {
+    for (let i = 0; i < tplInputs.value.length; i++) {
+      const it = tplInputs.value[i];
+      if (Number(it.required) === 1 && !String(tplValues.value[i] || '').trim()) {
+        ElMessage.warning('请填写' + it.label);
+        return;
+      }
+    }
+  } else if (needAccount.value && !buyForm.value.recharge_account) {
     ElMessage.warning('请输入充值账号');
     return;
   }
   buying.value = true;
   try {
-    const res = await orderBuy({
+    const payload = {
       goods_id: goods.value.id,
       quantity: buyForm.value.quantity,
-      recharge_account: buyForm.value.recharge_account,
       pay_type: 'balance',
-    });
+    };
+    if (tplInputs.value.length) {
+      payload.tpl_inputs = tplValues.value;
+    } else {
+      payload.recharge_account = buyForm.value.recharge_account;
+    }
+    const res = await orderBuy(payload);
     ElMessage.success('下单成功');
     router.push(`/order/${res.data?.ordersn}`);
   } catch (e) { /* 拦截器已提示 */ } finally {
@@ -109,6 +132,7 @@ onMounted(async () => {
   try {
     const res = await goodsRead(route.params.id);
     goods.value = res.data || {};
+    tplValues.value = tplInputs.value.map(() => '');
   } catch (e) { /* ignore */ } finally {
     loading.value = false;
   }

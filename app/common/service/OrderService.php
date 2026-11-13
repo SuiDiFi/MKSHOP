@@ -13,6 +13,7 @@ namespace app\common\service;
 use app\common\model\Card;
 use app\common\model\CardCate;
 use app\common\model\Goods;
+use app\common\model\GoodsTpl;
 use app\common\model\GoodsStock;
 use app\common\model\Member;
 use app\common\model\MemberMoney;
@@ -134,6 +135,9 @@ class OrderService
             ? (string) Member::where('id', $supplierId)->value('nickname')
             : '';
 
+        // 下单输入项模板（P1-A）：绑定 tpl_id 时按模板字段校验并落库快照
+        $tplInput = self::resolveTplInput($goods, $input);
+
         $order = new Order();
         $order->save(array_merge([
             'status'              => Order::ST_WAIT_PAY,
@@ -156,7 +160,9 @@ class OrderService
             'quantity'            => $quantity2,
             'total_price'         => $total,
             'order_price'         => bcsub($total, bcmul((string) $goods->getAttr('cost_value'), (string) $quantity2, 5), 4),
-            'recharge_account'    => (string) ($input['recharge_account'] ?? ''),
+            'recharge_account'    => $tplInput['account'],
+            'recharge_password'   => $tplInput['password'],
+            'tpl_data'            => $tplInput['snapshot'],
             'recharge_url'        => (string) $goods->getAttr('recharge_url'),
             'recharge_time_type'  => (int) $goods->getAttr('recharge_time_type'),
             'recharge_time_value' => (int) $goods->getAttr('recharge_time_value'),
@@ -168,6 +174,67 @@ class OrderService
             'buy_host'            => (string) ($input['buy_host'] ?? ''),
         ], $vipFields));
         return $order;
+    }
+
+    /**
+     * 下单输入项模板校验与快照（P1-A）
+     * - 未绑定模板（goods.tpl_id=0）：完全保持原有输入行为（recharge_account）
+     * - 已绑定：按模板 inputs 顺序校验必填/长度，第 1 项落 recharge_account、第 2 项落 recharge_password，
+     *   全部原始填写值以 tpl_data JSON 快照保留（{tpl_id,tpl_name,items:[{label,value}]}）
+     * @return array{account:string, password:string, snapshot:?string}
+     */
+    protected static function resolveTplInput(Goods $goods, array $input): array
+    {
+        $out = [
+            'account'  => (string) ($input['recharge_account'] ?? ''),
+            'password' => '',
+            'snapshot' => null,
+        ];
+        $tplId = (int) $goods->getAttr('tpl_id');
+        if ($tplId <= 0) {
+            return $out;
+        }
+        $tpl = GoodsTpl::findOrEmpty($tplId);
+        if ($tpl->isEmpty() || (int) $tpl->getAttr('delete_time') !== 0 || (int) $tpl->getAttr('status') !== 1) {
+            throw_fail('商品下单模板已停用，暂时无法下单', 1);
+        }
+        $inputs = $tpl->getAttr('inputs');
+        if (is_string($inputs)) {
+            $inputs = json_decode($inputs, true) ?: [];
+        }
+        if (!is_array($inputs) || $inputs === []) {
+            return $out; // 模板未定义输入项：兼容原有输入
+        }
+        $values = $input['tpl_inputs'] ?? [];
+        if (is_string($values)) {
+            $values = json_decode($values, true) ?: [];
+        }
+        if (!is_array($values)) {
+            $values = [];
+        }
+        $values = array_values($values);
+        $items  = [];
+        $parsed = [];
+        foreach (array_values($inputs) as $i => $item) {
+            $label = (string) ($item['label'] ?? '');
+            $val   = isset($values[$i]) ? trim((string) $values[$i]) : '';
+            if (!empty($item['required']) && $val === '') {
+                throw_fail("请填写{$label}", 1);
+            }
+            if (mb_strlen($val) > 200) {
+                throw_fail("{$label}内容过长（最多 200 字）", 1);
+            }
+            $items[]  = ['label' => $label, 'value' => $val];
+            $parsed[] = $val;
+        }
+        $out['account']  = $parsed[0] ?? '';
+        $out['password'] = $parsed[1] ?? '';
+        $out['snapshot'] = json_encode([
+            'tpl_id'   => $tplId,
+            'tpl_name' => (string) $tpl->getAttr('name'),
+            'items'    => $items,
+        ], JSON_UNESCAPED_UNICODE);
+        return $out;
     }
 
     /**

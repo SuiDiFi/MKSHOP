@@ -144,6 +144,23 @@ class GoodsController extends BaseController
                 $data['price_tpl_id'] = $quote['tpl_id'];
             }
         }
+        // 下单输入项模板（P1-A：绑定 tpl_id 时由前台按模板渲染输入项；未绑定保持原有数量/账号输入）
+        $data['tpl'] = null;
+        $tplId = (int) $goods->getAttr('tpl_id');
+        if ($tplId > 0) {
+            $tpl = \app\common\model\GoodsTpl::findOrEmpty($tplId);
+            if (!$tpl->isEmpty() && (int) $tpl->getAttr('status') === 1 && (int) $tpl->getAttr('delete_time') === 0) {
+                $inputs = $tpl->getAttr('inputs');
+                if (is_string($inputs)) {
+                    $inputs = json_decode($inputs, true) ?: [];
+                }
+                $data['tpl'] = [
+                    'id'     => $tplId,
+                    'name'   => (string) $tpl->getAttr('name'),
+                    'inputs' => is_array($inputs) ? array_values($inputs) : [],
+                ];
+            }
+        }
         // 实时库存（卡密商品以卡库余量为准）
         $stockNum = (int) $goods->getAttr('stock_num');
         if ((int) $goods->getAttr('goods_type') === 1) {
