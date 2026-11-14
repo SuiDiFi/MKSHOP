@@ -90,6 +90,8 @@ export const goodsIndex = (params) => mksRequest('/admin/goods/index', 'GET', pa
 export const goodsRead = (id) => mksRequest(`/admin/goods/read/${id}`);
 export const goodsCreate = (form) => mksRequest('/admin/goods/create', 'POST', {}, { form });
 export const goodsSave = (id, form) => mksRequest(`/admin/goods/save/${id}`, 'POST', {}, { form });
+export const goodsSaveStock = (goodsId, cardCateId) =>
+  mksRequest('/admin/goods/save_goods_stock', 'POST', {}, { goods_id: goodsId, card_cate_id: cardCateId });
 export const goodsDelete = (id) => mksRequest(`/admin/goods/delete/${id}`, 'POST');
 export const goodsDestroy = (id) => mksRequest(`/admin/goods/destroy/${id}`, 'POST');
 export const goodsRestore = (id) => mksRequest(`/admin/goods/restore/${id}`, 'POST');
@@ -224,6 +226,9 @@ export const memberCollectDual = (id, data) => mksRequest(`/admin/member_collect
 // ─── 分销佣金（M4）───
 export const commissionIndex = (params) => mksRequest('/admin/commission/index', 'GET', params);
 export const commissionSettle = (id) => mksRequest(`/admin/commission/settle/${id}`, 'POST');
+
+// ─── 资金明细（会员余额流水，详情抽屉「资金明细」页签）───
+export const memberMoneyIndex = (params) => mksRequest('/admin/member_money/index', 'GET', params);
 
 // ─── DIY 装修（M5）───
 export const diyIndex = () => mksRequest('/admin/diy/index', 'GET');

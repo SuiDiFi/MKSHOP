@@ -222,6 +222,9 @@ Route::group('admin', function () {
         Route::get('commission/index', 'admin.CommissionController/index');
         Route::post('commission/settle/:id', 'admin.CommissionController/settle');
 
+        // 资金明细（权限点 member_money/*，详情抽屉「资金明细」页签）
+        Route::get('member_money/index', 'admin.MemberMoneyController/index');
+
         // ── M5 装修模块 ──────────────────────────────────────
         // DIY 页面（权限点 diy/*）
         Route::get('diy/index', 'admin.DiyController/index');

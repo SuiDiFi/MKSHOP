@@ -181,30 +181,47 @@
       </template>
     </el-dialog>
 
-    <!-- 商户详情 -->
-    <el-drawer v-model="detailVisible" title="商户详情" size="520px">
-      <template v-if="detail.merchant">
-        <el-descriptions :column="1" border size="small">
-          <el-descriptions-item label="商户ID">{{ detail.merchant.id }}</el-descriptions-item>
-          <el-descriptions-item label="店铺名">{{ detail.merchant.name }}</el-descriptions-item>
+    <!-- 商户详情：1000px 抽屉 + 页签（钱包/结算各自一页，流水仍是独立抽屉） -->
+    <mks-detail-drawer v-model="detailVisible" title="商户信息" :tabs="detailTabs">
+      <template #actions>
+        <el-button size="small" type="primary" plain @click="openFlow(detailRow)">货款流水</el-button>
+      </template>
+
+      <template #top>
+        <ul class="mks-dt-meta">
+          <li>店铺名<b>{{ detail.merchant?.name }}</b></li>
+          <li>商户ID<b>#{{ detail.merchant?.id }}</b></li>
+          <li>状态<b>{{ detail.merchant?.status === 1 ? '正常' : '停用' }}</b></li>
+          <li>可用货款<b>{{ detail.wallet?.supply_money }}</b></li>
+        </ul>
+      </template>
+
+      <template #info>
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item label="商户ID">{{ detail.merchant?.id }}</el-descriptions-item>
+          <el-descriptions-item label="店铺名">{{ detail.merchant?.name }}</el-descriptions-item>
           <el-descriptions-item label="会员">{{ detail.member?.username }} / {{ detail.member?.nickname }}</el-descriptions-item>
-          <el-descriptions-item label="联系人">{{ detail.merchant.contact || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="电话">{{ detail.merchant.mobile || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ detail.merchant.status === 1 ? '正常' : '停用' }}</el-descriptions-item>
+          <el-descriptions-item label="联系人">{{ detail.merchant?.contact || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="电话">{{ detail.merchant?.mobile || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">{{ detail.merchant?.status === 1 ? '正常' : '停用' }}</el-descriptions-item>
         </el-descriptions>
-        <div class="section">货款钱包</div>
-        <el-descriptions :column="1" border size="small">
+      </template>
+
+      <template #wallet>
+        <el-descriptions :column="2" border size="small">
           <el-descriptions-item label="可用货款">{{ detail.wallet?.supply_money }}</el-descriptions-item>
           <el-descriptions-item label="冻结货款">{{ detail.wallet?.freez_supply_money }}</el-descriptions-item>
         </el-descriptions>
-        <div class="section">结算汇总</div>
-        <el-descriptions :column="1" border size="small">
+      </template>
+
+      <template #settlement>
+        <el-descriptions :column="2" border size="small">
           <el-descriptions-item label="待结算">{{ detail.settlement?.pending }}</el-descriptions-item>
           <el-descriptions-item label="已结算">{{ detail.settlement?.settled }}</el-descriptions-item>
           <el-descriptions-item label="累计回冲">{{ detail.settlement?.refunded }}</el-descriptions-item>
         </el-descriptions>
       </template>
-    </el-drawer>
+    </mks-detail-drawer>
 
     <!-- 货款流水 -->
     <el-drawer v-model="flowVisible" :title="`货款流水 - ${flowMerchant.name || ''}`" size="640px">
@@ -265,6 +282,7 @@ import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksStatusTabs from '@/components/mksStatusTabs.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksDetailDrawer from '@/components/mksDetailDrawer.vue';
 
 const router = useRouter();
 const goCfg = (p) => router.push(p);
@@ -356,11 +374,18 @@ const submitEdit = async () => {
   } finally { saving.value = false; }
 };
 
-// 详情
+// 详情（1000px 抽屉载体）
 const detailVisible = ref(false);
 const detail = ref({});
+const detailRow = ref(null);
+const detailTabs = [
+  { label: '商户信息', name: 'info' },
+  { label: '货款钱包', name: 'wallet' },
+  { label: '结算汇总', name: 'settlement' },
+];
 const openDetail = async (row) => {
   const res = await merchantRead(row.id);
+  detailRow.value = row;
   detail.value = res.data || {};
   detailVisible.value = true;
 };

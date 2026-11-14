@@ -100,6 +100,8 @@ export function registerDynamicRoutes(menus) {
         // 标签页行为对齐 KASUSHOU：首页不可关闭；隐藏页（编辑页等）不入标签
         noClosable: Number(node.noClosable) === 1 || node.name === 'Index',
         tabHidden: Number(node.hidden) === 1 || Number(node.tabHidden) === 1,
+        // 隐藏页高亮归属菜单（商品新增/编辑 → /goods/list）
+        activeMenu: node.activeMenu || '',
       },
     };
     router.addRoute('Layout', route);

@@ -73,7 +73,7 @@
 
     <!-- 批量操作（统一左上） -->
     <template #toolbar>
-      <el-button size="small" type="success" @click="openForm()">添加商品</el-button>
+      <el-button size="small" type="success" @click="goAdd">添加商品</el-button>
       <el-button size="small" :disabled="!selection.length" type="danger" plain @click="batchRecycle">批量移至回收站({{ selection.length }})</el-button>
       <el-button size="small" plain @click="filterToday">今日创建</el-button>
       <el-button size="small" plain @click="doExport">导出</el-button>
@@ -135,7 +135,7 @@
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status !== 8">
-              <el-button link type="primary" @click="openForm(row)">编辑</el-button>
+              <el-button link type="primary" @click="goEdit(row)">编辑</el-button>
               <el-popconfirm title="移入回收站？" @confirm="doDelete(row.id)">
                 <template #reference><el-button link type="danger">删除</el-button></template>
               </el-popconfirm>
@@ -155,65 +155,6 @@
           @size-change="doSearch" @current-change="load" />
       </template>
     </mks-page>
-
-    <el-dialog v-model="formVisible" :title="form.id ? '编辑商品' : '新增商品'" width="680px" top="5vh">
-      <el-form :model="form" label-width="100px">
-        <el-row :gutter="12">
-          <el-col :span="16"><el-form-item label="商品名称" required><el-input v-model="form.goods_name" maxlength="500" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="商品编号"><el-input v-model="form.goods_no" placeholder="留空自动生成" /></el-form-item></el-col>
-          <el-col :span="8">
-            <el-form-item label="商品类型" required>
-              <el-select v-model="form.goods_type" style="width: 100%">
-                <el-option v-for="s in typeOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="供货方式">
-              <el-select v-model="form.provide_type" style="width: 100%">
-                <el-option v-for="s in provideOptions" :key="s.code" :label="s.label" :value="Number(s.code)" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="所属分类">
-              <el-tree-select v-model="form.category_ids" :data="categoryTree" multiple check-strictly
-                node-key="id" :props="{ label: 'name', value: 'id', children: 'children' }"
-                placeholder="可多选" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8"><el-form-item label="面值/划线价"><el-input-number v-model="form.face_value" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="销售价" required><el-input-number v-model="form.real_price" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="成本价"><el-input-number v-model="form.cost_value" :min="0" :precision="2" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="最少购买"><el-input-number v-model="form.start_count" :min="1" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="最多购买"><el-input-number v-model="form.end_count" :min="1" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="数量档位"><el-input v-model="form.num_count" placeholder="逗号分隔，如 1,2,5,10" /></el-form-item></el-col>
-          <el-col :span="8">
-            <el-form-item label="品牌标签">
-              <el-select v-model="form.tags_id" clearable style="width: 100%">
-                <el-option v-for="t in tagsOptions" :key="t.id" :label="t.name" :value="t.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="下单模板">
-              <el-select v-model="form.tpl_id" clearable style="width: 100%" placeholder="不使用模板">
-                <el-option v-for="t in tplOptions" :key="t.id" :label="t.name" :value="t.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8"><el-form-item label="库存预警值"><el-input-number v-model="form.warn_num" :min="0" style="width: 100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="仅余额支付"><el-switch v-model="form.only_balance" :active-value="1" :inactive-value="0" /></el-form-item></el-col>
-          <el-col :span="24"><el-form-item label="商品主图"><el-input v-model="form.goods_img" placeholder="图片 URL（M5 接入上传组件）" /></el-form-item></el-col>
-          <el-col :span="24"><el-form-item label="商品详情"><el-input v-model="form.goods_info" type="textarea" :rows="4" /></el-form-item></el-col>
-          <el-col :span="24"><el-form-item label="购买须知"><el-input v-model="form.goods_notice" type="textarea" :rows="2" /></el-form-item></el-col>
-        </el-row>
-      </el-form>
-      <template #footer>
-        <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="doSave">保存</el-button>
-      </template>
-    </el-dialog>
 </template>
 
 <script setup>
@@ -221,9 +162,9 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
-  goodsIndex, goodsRead, goodsCreate, goodsSave, goodsDelete, goodsDestroy, goodsRestore,
-  goodsModify, goodsStatusType, goodsStatusCounts, goodsGoodsType, goodsProvideType, goodsDefaultTags, categoryList, tagsList,
-  goodsTplList, exportCsv,
+  goodsIndex, goodsDelete, goodsDestroy, goodsRestore,
+  goodsModify, goodsStatusType, goodsStatusCounts, goodsGoodsType, goodsProvideType, categoryList,
+  exportCsv,
 } from '@/api';
 import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
@@ -232,15 +173,12 @@ import mksEmpty from '@/components/mksEmpty.vue';
 
 const router = useRouter();
 const loading = ref(false);
-const saving = ref(false);
 const list = ref([]);
 const total = ref(0);
 const selection = ref([]);
 const statusOptions = ref([]);
 const typeOptions = ref([]);
 const provideOptions = ref([]);
-const tagsOptions = ref([]);
-const tplOptions = ref([]);
 const categoryTree = ref([]);
 const statusCounts = ref({ total: 0, by_status: {}, recycle: 0, stock_warn: 0 });
 
@@ -280,13 +218,14 @@ const query = reactive({
   real_price_min: '', real_price_max: '', only_balance: null, need_balance: null,
   create_range: null, today: false,
 });
-const formVisible = ref(false);
-const emptyForm = () => ({
-  id: 0, goods_name: '', goods_no: '', goods_type: 1, provide_type: 1, category_ids: [],
-  tags_id: 0, tpl_id: 0, face_value: 0, real_price: 0, cost_value: 0, start_count: 1, end_count: 1,
-  num_count: '1', warn_num: 0, only_balance: 0, goods_img: '', goods_info: '', goods_notice: '', status: 1,
-});
-const form = reactive(emptyForm());
+
+/** 新增/编辑走独立页（/goods/add、/goods/edit/:id，同一组件承载） */
+function goAdd() {
+  router.push('/goods/add');
+}
+function goEdit(row) {
+  router.push(`/goods/edit/${row.id}`);
+}
 
 function typeLabel(code) {
   const hit = typeOptions.value.find((s) => Number(s.code) === Number(code));
@@ -390,46 +329,13 @@ async function batchRecycle() {
 }
 
 async function loadEnums() {
-  const [st, gt, pt, tg, ct, tpl] = await Promise.all([
-    goodsStatusType(), goodsGoodsType(), goodsProvideType(), goodsDefaultTags(), categoryList(), goodsTplList(),
+  const [st, gt, pt, ct] = await Promise.all([
+    goodsStatusType(), goodsGoodsType(), goodsProvideType(), categoryList(),
   ]);
   statusOptions.value = st.data || [];
   typeOptions.value = gt.data || [];
   provideOptions.value = pt.data || [];
-  tagsOptions.value = tg.data || [];
   categoryTree.value = ct.data || [];
-  tplOptions.value = tpl.data || [];
-}
-
-async function openForm(row) {
-  Object.assign(form, emptyForm());
-  if (row) {
-    const res = await goodsRead(row.id);
-    const detail = res.data || {};
-    Object.assign(form, detail);
-    form.category_ids = String(detail.category_ids || '').split(',').filter(Boolean).map(Number);
-  }
-  formVisible.value = true;
-}
-
-async function doSave() {
-  if (!form.goods_name) return ElMessage.warning('请填写商品名称');
-  saving.value = true;
-  try {
-    const payload = { ...form };
-    payload.category_ids = (form.category_ids || []).join(',');
-    if (form.id) {
-      await goodsSave(form.id, payload);
-    } else {
-      delete payload.id;
-      await goodsCreate(payload);
-    }
-    ElMessage.success('保存成功');
-    formVisible.value = false;
-    load();
-  } finally {
-    saving.value = false;
-  }
 }
 
 async function doModify(row, field, value) {

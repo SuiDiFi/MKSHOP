@@ -27,7 +27,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUserStore } from '@/store/user';
 import { useSettingsStore } from '@/store/settings';
-import { navMenus } from '@/utils/menu';
+import { navMenus, activePathOf } from '@/utils/menu';
 import MenuItem from './menu-item.vue';
 
 const route = useRoute();
@@ -38,7 +38,8 @@ const collapse = computed(() => settings.collapse);
 const isDeep = computed(() => settings.theme.endsWith('-black'));
 // 用 navMenus 保留顶级「首页」渠道（之前按 path!=='/' 过滤会丢掉首页入口）
 const menus = computed(() => navMenus(user.menus || []));
-const activePath = computed(() => user.menuPathMap[route.meta?.menuId] || route.path);
+// 隐藏页（商品新增/编辑）用菜单 activeMenu 归属高亮，否则回落到 menuId 映射
+const activePath = computed(() => activePathOf(route, user.menuPathMap));
 </script>
 
 <style scoped>

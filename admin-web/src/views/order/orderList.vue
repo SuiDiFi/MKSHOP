@@ -146,48 +146,129 @@
       </template>
     </mks-page>
 
-    <!-- 详情抽屉 -->
-    <el-drawer v-model="detailVisible" title="订单详情" size="560px">
-      <template v-if="detail.order">
-        <el-descriptions :column="1" border size="small">
-          <el-descriptions-item label="订单号">{{ detail.order.ordersn }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="statusTagType(detail.order.status)">{{ detail.order.status_text }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="商品">{{ detail.order.goods_name }} × {{ detail.order.quantity }}</el-descriptions-item>
-          <el-descriptions-item label="充值账号">{{ detail.order.recharge_account || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="金额">{{ detail.order.total_price }}（单价 {{ detail.order.price }}）</el-descriptions-item>
-          <el-descriptions-item label="成本/利润">{{ detail.order.cost_value }} / {{ detail.order.order_price }}</el-descriptions-item>
-          <el-descriptions-item label="支付">{{ detail.order.pay_type || '—' }} @ {{ formatTime(detail.order.pay_time) }}</el-descriptions-item>
-          <el-descriptions-item label="下单 IP">{{ detail.order.ip || '—' }}（{{ detail.order.user_where }}）</el-descriptions-item>
-          <el-descriptions-item label="用户备注">{{ detail.order.mark || '—' }}</el-descriptions-item>
-        </el-descriptions>
+    <!-- 详情抽屉：1000px + 页签级懒加载（页签按数据动态显隐，无底部按钮） -->
+    <mks-detail-drawer v-model="detailVisible" title="订单信息" :tabs="detailTabs" @tab-load="onDetailTabLoad">
+      <template #actions>
+        <el-button v-if="detailRow?.docking_info" size="small" type="primary" plain @click="doSync(detailRow)">同步订单</el-button>
+        <el-button v-if="Number(detailRow?.provide_type) === 6 && Number(detailRow?.status) === 1" size="small" type="info"
+          plain @click="doNoBu(detailRow)">停止补单</el-button>
+        <el-button v-if="Number(detailRow?.provide_type) === 6 && [1, 2].includes(Number(detailRow?.status))" size="small"
+          type="warning" plain @click="doBu(detailRow)">补单</el-button>
+        <el-button v-if="Number(detailRow?.status) === 1" size="small" type="success" plain @click="doDual(detailRow, 3)">处理成功</el-button>
+        <el-popconfirm v-if="Number(detailRow?.status) === 3" title="确认退款？余额原路退回，已发卡密将冻结" width="240"
+          @confirm="doRefund(detailRow)">
+          <template #reference><el-button size="small" type="danger" plain>退款</el-button></template>
+        </el-popconfirm>
+        <el-button v-if="detailCards.length" size="small" plain @click="copyCards">复制卡密</el-button>
+      </template>
 
-        <h4 style="margin: 14px 0 8px">卡密明细</h4>
-        <el-table :data="detail.cards" border size="small" empty-text="无卡密（非卡密商品或未发货）">
-          <el-table-column prop="id" label="ID" width="60" />
-          <el-table-column prop="card_no" label="卡号" min-width="120" show-overflow-tooltip>
+      <template #top>
+        <div class="mks-dt-head">
+          <div class="mks-dt-main">
+            <el-image v-if="detailRow?.goods_img" :src="detailRow.goods_img" fit="cover" class="mks-dt-img" />
+            <div>
+              <div class="mks-dt-goods">{{ detailRow?.goods_name }} × {{ detailRow?.quantity }}</div>
+              <el-link underline="never" type="primary">{{ detailRow?.ordersn }}</el-link>
+              <el-link underline="never" class="mks-dt-copy" @click="copyText(detailRow?.ordersn)">
+                <mks-icon name="file-copy-line" :size="14" />
+              </el-link>
+            </div>
+          </div>
+          <ul class="mks-dt-meta">
+            <li>订单状态<b :class="'st-' + detailRow?.status">{{ detailRow?.status_text }}</b></li>
+            <li>订单总价<b>{{ detailRow?.total_price }}</b></li>
+            <li>成本/利润<b>{{ detailRow?.cost_value }} / {{ detailRow?.order_price }}</b></li>
+            <li>下单来源<b>{{ detailRow?.user_where || '—' }}</b></li>
+          </ul>
+        </div>
+      </template>
+
+      <template #info>
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item label="订单号">{{ detailOrder.ordersn }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="statusTagType(detailOrder.status)">{{ detailOrder.status_text }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="商品">{{ detailOrder.goods_name }} × {{ detailOrder.quantity }}</el-descriptions-item>
+          <el-descriptions-item label="充值账号">{{ detailOrder.recharge_account || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="金额">{{ detailOrder.total_price }}（单价 {{ detailOrder.price }}）</el-descriptions-item>
+          <el-descriptions-item label="成本/利润">{{ detailOrder.cost_value }} / {{ detailOrder.order_price }}</el-descriptions-item>
+          <el-descriptions-item label="支付">{{ detailOrder.pay_type || '—' }} @ {{ formatTime(detailOrder.pay_time) }}</el-descriptions-item>
+          <el-descriptions-item label="下单 IP">{{ detailOrder.ip || '—' }}（{{ detailOrder.user_where }}）</el-descriptions-item>
+          <el-descriptions-item label="用户">{{ detailOrder.nickname }}（#{{ detailOrder.uid }}）</el-descriptions-item>
+          <el-descriptions-item label="下单时间">{{ formatTime(detailOrder.create_time) }}</el-descriptions-item>
+          <el-descriptions-item label="用户备注" :span="2">{{ detailOrder.mark || '—' }}</el-descriptions-item>
+        </el-descriptions>
+      </template>
+
+      <template #goods>
+        <el-table :data="detailCards" border size="small">
+          <template #empty><mks-empty text="无卡密" hint="非卡密商品或未发货" /></template>
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="card_no" label="卡号" min-width="140" show-overflow-tooltip>
             <template #default="{ row }">{{ row.card_no || '—' }}</template>
           </el-table-column>
-          <el-table-column prop="card_password" label="卡密" min-width="140" show-overflow-tooltip />
-          <el-table-column label="状态" width="80">
+          <el-table-column prop="card_password" label="卡密" min-width="160" show-overflow-tooltip />
+          <el-table-column label="状态" width="90">
             <template #default="{ row }">
               <el-tag :type="['', 'success', 'info', 'danger'][row.status]" size="small">
                 {{ ['', '待售', '已售', '冻结'][row.status] || row.status }}
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="创建时间" width="170">
+            <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
+          </el-table-column>
         </el-table>
+      </template>
 
-        <h4 style="margin: 14px 0 8px">操作日志</h4>
+      <template #log>
         <el-timeline style="padding-left: 4px">
-          <el-timeline-item v-for="lg in detail.logs" :key="lg.id" :timestamp="formatTime(lg.create_time)">
+          <el-timeline-item v-for="lg in detailLogs" :key="lg.id" :timestamp="formatTime(lg.create_time)">
             {{ lg.mark }}
           </el-timeline-item>
         </el-timeline>
+        <mks-empty v-if="!detailLogs.length" text="暂无操作日志" />
       </template>
-    </el-drawer>
-</template>
+
+      <template #commission>
+        <el-table :data="tabData.commission.list" border size="small" v-loading="tabData.commission.loading">
+          <template #empty><mks-empty text="暂无佣金记录" /></template>
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column prop="layer" label="层级" width="70" />
+          <el-table-column label="受益人" min-width="140">
+            <template #default="{ row }">{{ row.uid1_name }}（#{{ row.uid1 }}）</template>
+          </el-table-column>
+          <el-table-column prop="price1" label="计算基数" width="110" />
+          <el-table-column prop="commision_price" label="佣金" width="100" />
+          <el-table-column prop="sure_status_text" label="结算状态" width="100" />
+          <el-table-column label="时间" width="170">
+            <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
+          </el-table-column>
+        </el-table>
+      </template>
+
+      <template #money>
+        <el-table :data="tabData.money.list" border size="small" v-loading="tabData.money.loading">
+          <template #empty><mks-empty text="暂无资金流水" /></template>
+          <el-table-column prop="uid" label="用户ID" width="90" />
+          <el-table-column prop="money" label="操作金额" width="110" />
+          <el-table-column prop="trade_type_text" label="交易类型" min-width="120" />
+          <el-table-column prop="before" label="变化前金额" width="120" />
+          <el-table-column prop="after" label="变化后金额" width="120" />
+          <el-table-column label="收支类型" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.change_type_text === '收入' ? 'success' : 'danger'" size="small">{{ row.change_type_text }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" width="170">
+            <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
+          </el-table-column>
+          <el-table-column prop="mark" label="备注" min-width="120" show-overflow-tooltip />
+        </el-table>
+      </template>
+    </mks-detail-drawer>
+  </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
@@ -195,6 +276,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   orderIndex, orderInfo, orderGoodsCards, orderDual, orderDelete, orderStatusCounts, orderSync, exportCsv,
+  commissionIndex, memberMoneyIndex,
 } from '@/api';
 import { orderBu, orderNoBu } from '@/api/m3';
 import { goodsGoodsType } from '@/api';
@@ -203,6 +285,8 @@ import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksStatusTabs from '@/components/mksStatusTabs.vue';
 import mksColumnSetter from '@/components/mksColumnSetter.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksIcon from '@/components/mksIcon.vue';
+import mksDetailDrawer from '@/components/mksDetailDrawer.vue';
 
 const router = useRouter();
 const loading = ref(false);
@@ -212,6 +296,9 @@ const selection = ref([]);
 const goodsTypeOptions = ref([]);
 const detailVisible = ref(false);
 const detail = ref({ order: null, logs: [], cards: [] });
+const detailOrder = computed(() => detail.value.order || {});
+const detailLogs = computed(() => detail.value.logs || []);
+const detailCards = computed(() => detail.value.cards || []);
 /** 页签数量角标（order/status_counts，默认近 30 天口径） */
 const counts = ref({ by_status: {}, by_provide: {}, total: 0, part_refund: 0, fail: 0 });
 
@@ -352,8 +439,66 @@ async function doExport() {
 async function openDetail(row) {
   const [info, cards] = await Promise.all([orderInfo(row.id), orderGoodsCards(row.id)]);
   const order = { ...row, ...(info.data.order || {}) };
+  detailRow.value = row;
+  tabData.commission.list = [];
+  tabData.money.list = [];
   detail.value = { order, logs: info.data.logs || [], cards: cards.data || [] };
   detailVisible.value = true;
+}
+
+/** 详情抽屉：当前行（页头操作按钮要用列表行的原始字段） */
+const detailRow = ref(null);
+
+/** 页签按数据显隐（对方 tabList 同思路：无卡密不给「商品信息」，非余额支付不给「资金明细」） */
+const detailTabs = computed(() => {
+  const tabs = [
+    { label: '订单详情', name: 'info' },
+    { label: '订单日志', name: 'log' },
+  ];
+  if (detail.value.cards.length > 0) tabs.splice(1, 0, { label: '商品信息', name: 'goods' });
+  tabs.push({ label: '订单佣金', name: 'commission' });
+  if (detail.value.order?.uid > 0) tabs.push({ label: '资金明细', name: 'money' });
+  return tabs;
+});
+
+/** 页签级懒加载：首次激活才发请求 */
+const tabData = reactive({
+  commission: { list: [], loading: false, loaded: false },
+  money: { list: [], loading: false, loaded: false },
+});
+
+async function onDetailTabLoad(name) {
+  const order = detail.value.order || {};
+  if (name === 'commission' && !tabData.commission.loaded) {
+    tabData.commission.loading = true;
+    try {
+      const res = await commissionIndex({ order_id: order.id, limit: 100 });
+      tabData.commission.list = res.data.list || [];
+      tabData.commission.loaded = true;
+    } finally {
+      tabData.commission.loading = false;
+    }
+  }
+  if (name === 'money' && !tabData.money.loaded) {
+    tabData.money.loading = true;
+    try {
+      const res = await memberMoneyIndex({ order_id: order.id, limit: 100 });
+      tabData.money.list = res.data.list || [];
+      tabData.money.loaded = true;
+    } finally {
+      tabData.money.loading = false;
+    }
+  }
+}
+
+async function copyText(text) {
+  if (!text) return;
+  await navigator.clipboard.writeText(String(text));
+  ElMessage.success('复制成功');
+}
+
+function copyCards() {
+  copyText(detail.value.cards.map((c) => c.card_password).filter(Boolean).join('\n'));
 }
 
 async function doDual(row, status) {

@@ -24,4 +24,14 @@ class MemberMoney extends BaseModel
     /** change_type */
     public const C_INCOME = 1; // 收入
     public const C_PAY    = 2; // 支出
+
+    public const TRADE_TYPE_TEXT = [
+        self::T_ORDER_PAY       => '订单扣款',
+        self::T_ORDER_REFUND    => '订单退款',
+        self::T_WITHDRAW_APPLY  => '提现冻结',
+        self::T_WITHDRAW_REFUND => '提现退回',
+        self::T_RECHARGE_ONLINE => '在线充值',
+        self::T_ADMIN_ADD       => '后台加款',
+        self::T_ADMIN_SUB       => '后台扣款',
+    ];
 }

@@ -19,7 +19,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUserStore } from '@/store/user';
-import { navMenus } from '@/utils/menu';
+import { navMenus, activePathOf } from '@/utils/menu';
 import MenuItem from './menu-item.vue';
 
 const route = useRoute();
@@ -27,7 +27,8 @@ const user = useUserStore();
 
 // 保留顶级「首页」渠道（之前按 path!=='/' 过滤，导致横向布局少一个入口）
 const menus = computed(() => navMenus(user.menus || []));
-const activePath = computed(() => user.menuPathMap[route.meta?.menuId] || route.path);
+// 隐藏页（商品新增/编辑）用菜单 activeMenu 归属高亮，否则回落到 menuId 映射
+const activePath = computed(() => activePathOf(route, user.menuPathMap));
 </script>
 
 <style scoped>

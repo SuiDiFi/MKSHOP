@@ -74,20 +74,50 @@
       </template>
     </mks-page>
 
-    <!-- 详情抽屉 -->
-    <el-drawer v-model="detailVisible" title="售后详情" size="520px">
-      <el-descriptions v-if="detail.complain" :column="1" border size="small">
-        <el-descriptions-item label="售后主题">{{ detail.complain.subject }}</el-descriptions-item>
-        <el-descriptions-item label="订单号">{{ detail.complain.ordersn }}</el-descriptions-item>
-        <el-descriptions-item label="商品">{{ detail.complain.goods_name }}</el-descriptions-item>
-        <el-descriptions-item label="金额">{{ detail.complain.total_price }}</el-descriptions-item>
-        <el-descriptions-item label="用户">{{ detail.complain.nickname }}（#{{ detail.complain.uid }}）</el-descriptions-item>
-        <el-descriptions-item label="来源">{{ detail.complain.supplier_type_text }}</el-descriptions-item>
-        <el-descriptions-item label="投诉内容">{{ detail.complain.content || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="售后时间">{{ formatTime(detail.complain.create_time) }}</el-descriptions-item>
-        <el-descriptions-item label="订单状态">{{ orderStatusText(detail.order ? detail.order.status : -9) }}</el-descriptions-item>
-      </el-descriptions>
-    </el-drawer>
+    <!-- 详情抽屉：1000px + 页签（售后信息 / 关联订单），处理动作在页头 -->
+    <mks-detail-drawer v-model="detailVisible" title="售后信息" :tabs="detailTabs">
+      <template #actions>
+        <el-button v-if="Number(detailRow?.status) === 1" size="small" type="primary" plain @click="openHandle(detailRow)">处理售后</el-button>
+        <el-popconfirm v-if="Number(detailRow?.status) === 1" title="撤销售后并退款？" width="200" @confirm="doCancel(detailRow)">
+          <template #reference><el-button size="small" type="warning" plain>撤销售后</el-button></template>
+        </el-popconfirm>
+      </template>
+
+      <template #top>
+        <ul class="mks-dt-meta">
+          <li>售后主题<b>{{ detail.complain?.subject }}</b></li>
+          <li>售后状态<b>{{ detail.complain?.status_text }}</b></li>
+          <li>订单号<b>{{ detail.complain?.ordersn }}</b></li>
+          <li>金额<b>{{ detail.complain?.total_price }}</b></li>
+        </ul>
+      </template>
+
+      <template #info>
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item label="售后主题">{{ detail.complain.subject }}</el-descriptions-item>
+          <el-descriptions-item label="订单号">{{ detail.complain.ordersn }}</el-descriptions-item>
+          <el-descriptions-item label="商品">{{ detail.complain.goods_name }}</el-descriptions-item>
+          <el-descriptions-item label="金额">{{ detail.complain.total_price }}</el-descriptions-item>
+          <el-descriptions-item label="用户">{{ detail.complain.nickname }}（#{{ detail.complain.uid }}）</el-descriptions-item>
+          <el-descriptions-item label="来源">{{ detail.complain.supplier_type_text }}</el-descriptions-item>
+          <el-descriptions-item label="售后时间">{{ formatTime(detail.complain.create_time) }}</el-descriptions-item>
+          <el-descriptions-item label="投诉内容" :span="2">{{ detail.complain.content || '—' }}</el-descriptions-item>
+        </el-descriptions>
+      </template>
+
+      <template #order>
+        <el-descriptions v-if="detail.order" :column="2" border size="small">
+          <el-descriptions-item label="订单号">{{ detail.order.ordersn }}</el-descriptions-item>
+          <el-descriptions-item label="订单状态">{{ orderStatusText(detail.order.status) }}</el-descriptions-item>
+          <el-descriptions-item label="商品">{{ detail.order.goods_name }}</el-descriptions-item>
+          <el-descriptions-item label="订单金额">{{ detail.order.total_price }}</el-descriptions-item>
+          <el-descriptions-item label="用户">{{ detail.order.nickname }}（#{{ detail.order.uid }}）</el-descriptions-item>
+          <el-descriptions-item label="下单时间">{{ formatTime(detail.order.create_time) }}</el-descriptions-item>
+          <el-descriptions-item label="充值账号" :span="2">{{ detail.order.recharge_account || '—' }}</el-descriptions-item>
+        </el-descriptions>
+        <mks-empty v-else text="没有关联订单" hint="售后单未带出订单信息" />
+      </template>
+    </mks-detail-drawer>
 
     <!-- 处理售后弹窗 -->
     <el-dialog v-model="handleVisible" title="处理售后" width="520px">
@@ -120,6 +150,7 @@ import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksStatusTabs from '@/components/mksStatusTabs.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksDetailDrawer from '@/components/mksDetailDrawer.vue';
 
 const router = useRouter();
 const goCfg = (p) => router.push(p);
@@ -130,6 +161,11 @@ const total = ref(0);
 const typeOptions = ref([]);
 const detailVisible = ref(false);
 const detail = ref({ complain: null, order: null });
+const detailRow = ref(null);
+const detailTabs = [
+  { label: '售后信息', name: 'info' },
+  { label: '关联订单', name: 'order' },
+];
 const handleVisible = ref(false);
 const saving = ref(false);
 const handleForm = reactive({ id: 0, result: 'agree', money: 0, total: '0', mark: '' });
@@ -200,6 +236,7 @@ async function doExport() {
 
 async function openDetail(row) {
   const res = await complainRead(row.id);
+  detailRow.value = row;
   detail.value = { complain: res.data.complain || row, order: res.data.order || null };
   detailVisible.value = true;
 }

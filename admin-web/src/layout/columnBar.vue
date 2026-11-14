@@ -82,7 +82,7 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/store/user';
 import { useSettingsStore } from '@/store/settings';
-import { columnOf, groupItems } from '@/utils/menu';
+import { columnOf, groupItems, activePathOf } from '@/utils/menu';
 import mksIcon from '@/components/mksIcon.vue';
 
 const route = useRoute();
@@ -99,7 +99,9 @@ const active = computed(() => column.value.active);
 const needHeadDivider = computed(() => items.value.length > 0 && items.value[0].type !== 'divider');
 
 function isActive(it) {
-  return route.path === it.path || route.path.startsWith(it.path + '/');
+  // 隐藏页（商品新增/编辑）按 activeMenu 归属高亮：/goods/add 要亮起「商品列表」
+  const cur = activePathOf(route, user.menuPathMap);
+  return cur === it.path || cur.startsWith(it.path + '/');
 }
 
 function onGroup(g) {

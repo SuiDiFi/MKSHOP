@@ -58,6 +58,8 @@ class GoodsController extends Base
         'status', 'stop_reason', 'goods_imgs', 'goods_img', 'provide_type', 'category_ids',
         'tags_id', 'check_status', 'virtual_num', 'stock_num', 'warn_num', 'sort',
         'only_balance', 'can_back', 'is_batch', 'goods_tags', 'is_recharge', 'tpl_id',
+        // 商品编辑页「商品配置」：这几列是真被读的——is_rebate 是佣金开关，后三个是自动补单扫描条件
+        'is_rebate', 'docking_order_bu', 'order_bu_count', 'auto_order_time',
     ];
 
     protected string $crudOrder = 'sort desc, id desc';
@@ -154,6 +156,26 @@ class GoodsController extends Base
                 date('Y-m-d H:i:s', (int) $r['create_time']),
             ];
         }, $rows));
+    }
+
+    /**
+     * 详情（商品编辑页用）：附带卡密库存桥，「库存管理」页签要回显当前绑定的卡库
+     */
+    public function read(int $id)
+    {
+        $row = Goods::findOrEmpty($id);
+        if ($row->isEmpty()) {
+            return $this->fail('商品不存在');
+        }
+        $out = $row->toArray();
+        $bind = GoodsStock::where('goods_id', $id)->where('type', GoodsStock::TYPE_CARD)->findOrEmpty();
+        $out['stock_bind'] = $bind->isEmpty() ? null : [
+            'card_cate_id' => (int) $bind->getAttr('card_cate_id'),
+            'name'         => (string) $bind->getAttr('name'),
+            'stock_num'    => (int) $bind->getAttr('stock_num'),
+            'cost_value'   => (string) $bind->getAttr('cost_value'),
+        ];
+        return $this->ok($out);
     }
 
     /**

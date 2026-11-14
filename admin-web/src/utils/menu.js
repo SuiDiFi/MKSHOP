@@ -70,6 +70,14 @@ export function breadcrumbOf(routePath, menus, pathMap) {
 }
 
 /**
+ * 菜单高亮路径：隐藏页（商品新增/编辑）自己不在菜单里，
+ * 用菜单表 activeMenu 指定归属；否则回落到 menuId 映射，再回落到当前 path。
+ */
+export function activePathOf(route, pathMap = {}) {
+  return route.meta?.activeMenu || pathMap[route.meta?.menuId] || route.path;
+}
+
+/**
  * 取某顶级渠道下的可点菜单项（二级；三级用 divider 分组）
  * @param {object} group 顶级菜单节点
  * @param {string} basePath 该渠道绝对路径

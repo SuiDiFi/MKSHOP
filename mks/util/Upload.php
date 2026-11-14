@@ -25,7 +25,9 @@ class Upload
             throw_fail('不允许的文件类型: ' . $ext, 422);
         }
         $maxSize = (int) Config::get('mks.upload.max_size', 52428800);
-        if ($file->getSize() > $maxSize) {
+        // size 必须在 move 之前取：move 之后临时文件已被搬走，再 getSize() 会 stat 失败
+        $size = (int) $file->getSize();
+        if ($size > $maxSize) {
             throw_fail('文件超过大小限制', 422);
         }
 
@@ -45,7 +47,7 @@ class Upload
             'url'  => $rel,
             'path' => $rel,
             'name' => $file->getOriginalName(),
-            'size' => (int) $file->getSize(),
+            'size' => $size,
         ];
     }
 }

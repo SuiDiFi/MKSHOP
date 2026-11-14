@@ -116,28 +116,85 @@
     </el-dialog>
 
     <!-- 详情 -->
-    <el-dialog v-model="detailVisible" title="会员详情" width="640px">
-      <el-descriptions v-if="detail" :column="2" border>
-        <el-descriptions-item label="会员ID">{{ detail.id }}</el-descriptions-item>
-        <el-descriptions-item label="账号">{{ detail.username }}</el-descriptions-item>
-        <el-descriptions-item label="昵称">{{ detail.nickname }}</el-descriptions-item>
-        <el-descriptions-item label="等级">
-          {{ detail.level_name }}（折扣率 {{ detail.pay_rate }}%）
-        </el-descriptions-item>
-        <el-descriptions-item label="上级">{{ detail.pid > 0 ? `${detail.parent_name || '—'}（${detail.pid}）` : '—' }}</el-descriptions-item>
-        <el-descriptions-item label="下级数">{{ detail.child_num }}</el-descriptions-item>
-        <el-descriptions-item label="余额">{{ money(detail.balance) }}</el-descriptions-item>
-        <el-descriptions-item label="佣金余额">{{ money(detail.commission_money) }}</el-descriptions-item>
-        <el-descriptions-item label="冻结佣金">{{ money(detail.freez_commission_money) }}</el-descriptions-item>
-        <el-descriptions-item label="累计佣金">{{ money(detail.total_commission_money) }}</el-descriptions-item>
-        <el-descriptions-item label="累计消费">{{ money(detail.cost) }}</el-descriptions-item>
-        <el-descriptions-item label="累计充值">{{ money(detail.total_recharge_money) }}</el-descriptions-item>
-        <el-descriptions-item label="订单数">{{ detail.order_count }}</el-descriptions-item>
-        <el-descriptions-item label="成功订单">{{ detail.order_success }}</el-descriptions-item>
-        <el-descriptions-item label="注册时间">{{ fmt(detail.create_time) }}</el-descriptions-item>
-        <el-descriptions-item label="最后登录">{{ fmt(detail.last_time) }}</el-descriptions-item>
-      </el-descriptions>
-    </el-dialog>
+    <!-- 会员详情：1000px 抽屉 + 页签级懒加载（资金/佣金/订单各自一次列表请求） -->
+    <mks-detail-drawer v-model="detailVisible" title="用户信息" :tabs="detailTabs" @tab-load="onDetailTabLoad">
+      <template #top>
+        <ul class="mks-dt-meta">
+          <li>余额<b>{{ money(detail?.balance) }}</b></li>
+          <li>佣金<b>{{ money(detail?.commission_money) }}</b></li>
+          <li>累计消费<b>{{ money(detail?.cost) }}</b></li>
+          <li>成交订单<b>{{ detail?.order_success ?? 0 }} / {{ detail?.order_count ?? 0 }} 笔</b></li>
+        </ul>
+      </template>
+
+      <template #info>
+        <el-descriptions v-if="detail" :column="2" border size="small">
+          <el-descriptions-item label="会员ID">{{ detail.id }}</el-descriptions-item>
+          <el-descriptions-item label="账号">{{ detail.username }}</el-descriptions-item>
+          <el-descriptions-item label="昵称">{{ detail.nickname }}</el-descriptions-item>
+          <el-descriptions-item label="等级">
+            {{ detail.level_name }}（折扣率 {{ detail.pay_rate }}%）
+          </el-descriptions-item>
+          <el-descriptions-item label="上级">{{ detail.pid > 0 ? `${detail.parent_name || '—'}（${detail.pid}）` : '—' }}</el-descriptions-item>
+          <el-descriptions-item label="下级数">{{ detail.child_num }}</el-descriptions-item>
+          <el-descriptions-item label="余额">{{ money(detail.balance) }}</el-descriptions-item>
+          <el-descriptions-item label="佣金余额">{{ money(detail.commission_money) }}</el-descriptions-item>
+          <el-descriptions-item label="冻结佣金">{{ money(detail.freez_commission_money) }}</el-descriptions-item>
+          <el-descriptions-item label="累计佣金">{{ money(detail.total_commission_money) }}</el-descriptions-item>
+          <el-descriptions-item label="累计消费">{{ money(detail.cost) }}</el-descriptions-item>
+          <el-descriptions-item label="累计充值">{{ money(detail.total_recharge_money) }}</el-descriptions-item>
+          <el-descriptions-item label="订单数">{{ detail.order_count }}</el-descriptions-item>
+          <el-descriptions-item label="成功订单">{{ detail.order_success }}</el-descriptions-item>
+          <el-descriptions-item label="注册时间">{{ fmt(detail.create_time) }}</el-descriptions-item>
+          <el-descriptions-item label="最后登录">{{ fmt(detail.last_time) }}</el-descriptions-item>
+        </el-descriptions>
+      </template>
+
+      <template #money>
+        <el-table :data="tabData.money.list" border size="small" v-loading="tabData.money.loading">
+          <template #empty><mks-empty text="暂无资金流水" /></template>
+          <el-table-column prop="money" label="操作金额" width="110" />
+          <el-table-column prop="trade_type_text" label="交易类型" min-width="120" />
+          <el-table-column prop="before" label="变化前金额" width="120" />
+          <el-table-column prop="after" label="变化后金额" width="120" />
+          <el-table-column label="收支类型" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.change_type_text === '收入' ? 'success' : 'danger'" size="small">{{ row.change_type_text }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" width="170">
+            <template #default="{ row }">{{ fmt(row.create_time) }}</template>
+          </el-table-column>
+          <el-table-column prop="mark" label="备注" min-width="120" show-overflow-tooltip />
+        </el-table>
+      </template>
+
+      <template #commission>
+        <el-table :data="tabData.commission.list" border size="small" v-loading="tabData.commission.loading">
+          <template #empty><mks-empty text="暂无佣金记录" /></template>
+          <el-table-column prop="order_id" label="订单ID" width="90" />
+          <el-table-column prop="layer" label="层级" width="70" />
+          <el-table-column prop="commision_price" label="佣金" width="100" />
+          <el-table-column prop="sure_status_text" label="结算状态" width="100" />
+          <el-table-column label="时间" width="170">
+            <template #default="{ row }">{{ fmt(row.create_time) }}</template>
+          </el-table-column>
+        </el-table>
+      </template>
+
+      <template #orders>
+        <el-table :data="tabData.orders.list" border size="small" v-loading="tabData.orders.loading">
+          <template #empty><mks-empty text="暂无订单" /></template>
+          <el-table-column prop="ordersn" label="订单号" width="190" show-overflow-tooltip />
+          <el-table-column prop="goods_name" label="商品" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="total_price" label="金额" width="100" />
+          <el-table-column prop="status_text" label="状态" width="100" />
+          <el-table-column label="下单时间" width="170">
+            <template #default="{ row }">{{ fmt(row.create_time) }}</template>
+          </el-table-column>
+        </el-table>
+      </template>
+    </mks-detail-drawer>
 </template>
 
 <script setup>
@@ -147,11 +204,13 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   memberIndex, memberRead, memberCreate, memberSave, memberDelete,
   memberUnbind, memberResetPassword, memberLevelList,
+  orderIndex, commissionIndex, memberMoneyIndex,
 } from '../../api';
 import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksStatusTabs from '@/components/mksStatusTabs.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksDetailDrawer from '@/components/mksDetailDrawer.vue';
 
 const router = useRouter();
 const goCfg = (p) => router.push(p);
@@ -225,9 +284,39 @@ const doSave = async () => {
     saving.value = false;
   }
 };
+const detailTabs = [
+  { label: '用户信息', name: 'info' },
+  { label: '资金明细', name: 'money' },
+  { label: '佣金明细', name: 'commission' },
+  { label: '购买记录', name: 'orders' },
+];
+const tabData = reactive({
+  money: { list: [], loading: false, loaded: false },
+  commission: { list: [], loading: false, loaded: false },
+  orders: { list: [], loading: false, loaded: false },
+});
+
+// 页签首次激活才发请求（对方抽屉同款懒加载节奏）
+const onDetailTabLoad = async (name) => {
+  const uid = detail.value?.id;
+  if (!uid || !tabData[name] || tabData[name].loaded) return;
+  tabData[name].loading = true;
+  try {
+    let res;
+    if (name === 'money') res = await memberMoneyIndex({ uid, limit: 100 });
+    else if (name === 'commission') res = await commissionIndex({ uid, limit: 100 });
+    else res = await orderIndex({ page: 1, limit: 100, where: JSON.stringify([{ field: 'uid', op: 'eq', value: uid }]) });
+    tabData[name].list = res.data.list || [];
+    tabData[name].loaded = true;
+  } finally {
+    tabData[name].loading = false;
+  }
+};
+
 const openDetail = async (row) => {
   const res = await memberRead(row.id);
   detail.value = res.data || null;
+  Object.values(tabData).forEach((v) => { v.list = []; v.loaded = false; });
   detailVisible.value = true;
 };
 const doResetPassword = async (row) => {
