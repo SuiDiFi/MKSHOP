@@ -350,10 +350,11 @@
 * 隐藏页高亮实测：布局层改用 `activePathOf(route, menuPathMap)` 后，在 `/goods/add` 上「商品」渠道与「商品列表」同时高亮，面包屑 商品 > 添加商品，console 无报错。
 * 本轮修掉的两个真缺陷：① `tabIndex` 写成 `t.name === activeTab`（漏 `.value`，比较恒不相等 → 求值恒 -1，`下一步` 不前进、`上一步` 永远隐藏）；② 上面那个 `getSize()` 时机。另外 `PHPStan` 式的"响应 200 但 code=1"（如对不存在的 id 调 `goods/read` 返回「商品不存在」）经核实是全站既有的业务失败约定，前端拦截器据此弹错并 reject，**不是缺陷**，不改。
 * 造数据清理：测试商品、4 个 1×1 测试 PNG（含失败上传留下的孤儿文件）、1 行 `mks_file` 已全部删除，`public/uploads/goods/20261114/` 已空；`runtime/log/202611/14.log` 属主已回到 `82:82`（此前被我用 root `docker exec` 跑 CLI 时改成 root，导致 web 进程写不进日志、异常"静默"）。
-* 量测注意（下次别再误判）：浏览器标签页在后台时 `requestAnimationFrame` 不触发，`<transition>` 卡在 `fade-transform-leave-*`，新页看起来"没渲染"——这是量测环境，不是代码；验收必须在可见标签页里做。`el-upload` 的 `input[type=file]` 是 `display:none`，自动化点不到它，要用 `new DataTransfer(); dt.items.add(new File(...)); input.files=dt.files;` 再派发 `change`，走组件自身的 `http-request`；`visibility:hidden` 的元素 `innerText` 为空，判断存在性要用 `textContent`。
+* 量测注意（下次别再误判）：浏览器标签页在后台时 `requestAnimationFrame` 不触发，`<transition>` 卡在 `fade-transform-leave-*`，新页看起来"没渲染"——这是量测环境，不是代码。**不必非把标签页切前台：整页 reload 目标 URL 就行**（首屏没有离场过渡，隐藏态下 40 行照渲染，`getComputedStyle`/`getBoundingClientRect` 全有效；两侧基线都是这么量的）。用 hash/菜单切换才会卡住，判据＝DOM 里出现 `fade-transform-leave-active` 且行数 0。`el-upload` 的 `input[type=file]` 是 `display:none`，自动化点不到它，要用 `new DataTransfer(); dt.items.add(new File(...)); input.files=dt.files;` 再派发 `change`，走组件自身的 `http-request`；`visibility:hidden` 的元素 `innerText` 为空，判断存在性要用 `textContent`。
+* 页签激活态纠正（2026-11-15 复测）：参考后台商品页状态页签**有 2px `#1890FF` 的 `.el-tabs__active-bar`**；早先记的「active 只变字色、无下划线」是把**左侧菜单那组 29 项 `.el-tabs`** 当成了商品页签容器。定位容器要用「全部商品」文案向上找，别取第一个 `.el-tabs`。我们侧同样有 active-bar ⇒ 该项**已一致**，真正差的是 header `margin-bottom`（4px vs 15px）与计数呈现方式。
 * 仍未验证：非超管角色对 `goods/create` 的授权效果（超管短路 `isSuper`，在这个账号上测不出来）；`save_goods_stock` 的写入侧（只验了读/回显，不写是为了不动真实商品的卡库绑定）。
 
-本地 `vite build` 通过（最新一轮 `goodsAdd-DgVyoO22.js` 22.74 kB / `index-C3GrhNHN.js`，与线上入口仅差一行被 `tags_id`/`tpl_id` 兜底覆盖的死赋值）。本轮改动尚未提交，推送需另行确认。
+本地 `vite build` 通过（最新一轮 `goodsAdd-DgVyoO22.js` 22.74 kB / `index-C3GrhNHN.js`，与线上入口仅差一行被 `tags_id`/`tpl_id` 兜底覆盖的死赋值）。本轮改动已提交并推送：`f0960f4`（`main` → origin，2026-11-14）。
 
 
 
