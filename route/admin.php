@@ -99,11 +99,14 @@ Route::group('admin', function () {
         Route::post('goods_tpl/create', 'admin.GoodsTplController/create');
         Route::post('goods_tpl/save/:id', 'admin.GoodsTplController/save');
         Route::post('goods_tpl/delete/:id', 'admin.GoodsTplController/delete');
+        // 行内快捷改值（状态开关）——CurdTrait 已实现，缺注册就是线上 404
+        Route::post('goods_tpl/modify/:id', 'admin.GoodsTplController/modify');
         // 定价模板（M7 对齐 KASUSHOU pricereadydata）
         Route::get('price_ready/index', 'admin.PriceReadyController/index');
         Route::post('price_ready/create', 'admin.PriceReadyController/create');
         Route::post('price_ready/save/:id', 'admin.PriceReadyController/save');
         Route::post('price_ready/delete/:id', 'admin.PriceReadyController/delete');
+        Route::post('price_ready/modify/:id', 'admin.PriceReadyController/modify'); // 行内快捷改值
         Route::get('price_ready/type_list', 'admin.PriceReadyController/type_list');
         Route::post('goods/goods_type', 'admin.GoodsController/goods_type');
         Route::post('goods/provide_type', 'admin.GoodsController/provide_type');
