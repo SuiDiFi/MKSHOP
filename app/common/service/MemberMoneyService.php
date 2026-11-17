@@ -37,13 +37,12 @@ class MemberMoneyService
         if ($uid <= 0 || bccomp($money, '0', 4) <= 0) {
             throw_fail('金额参数错误', 1);
         }
-        // 幂等：同一 only_order_no 只入账一次
+        // 幂等快路径：同一 only_order_no 只入账一次。
+        // 权威判定是 uk_only_order_no 唯一索引 + 下面的 1062 捕获——本检查在事务外，挡不住并发。
         if ($idempotentKey !== '') {
-            $exists = MemberMoney::where('only_order_no', $idempotentKey)->findOrEmpty();
-            if (!$exists->isEmpty()) {
-                $uid0 = (int) $exists->getAttr('uid');
-                $after = (string) Member::where('id', $uid0)->value('balance');
-                return ['before' => $after, 'after' => $after];
+            $hit = self::alreadyBooked($idempotentKey);
+            if ($hit !== null) {
+                return $hit;
             }
         }
 
@@ -74,13 +73,46 @@ class MemberMoneyService
                 'mark'          => mb_substr($mark, 0, 250, 'UTF-8'),
                 'order_id'      => $orderId,
                 'admin_id'      => $adminId,
-                'only_order_no' => $idempotentKey,
+                // 无幂等键写 NULL：唯一索引下空串会互相冲突，NULL 才允许无限多条
+                'only_order_no' => $idempotentKey !== '' ? $idempotentKey : null,
             ]);
             Db::commit();
         } catch (\Throwable $e) {
             Db::rollback();
+            // 并发同键：余额已随事务回滚，唯一索引拦下的这次按"已入账"幂等返回
+            if ($idempotentKey !== '' && self::isDuplicateKey($e)) {
+                $hit = self::alreadyBooked($idempotentKey);
+                if ($hit !== null) {
+                    return $hit;
+                }
+            }
             throw $e;
         }
         return ['before' => $before, 'after' => $after];
+    }
+
+    /**
+     * 幂等命中：返回既有流水所属会员的当前余额（与入账成功返回同形）
+     */
+    protected static function alreadyBooked(string $key): ?array
+    {
+        $exists = MemberMoney::where('only_order_no', $key)->findOrEmpty();
+        if ($exists->isEmpty()) {
+            return null;
+        }
+        $balance = (string) Member::where('id', (int) $exists->getAttr('uid'))->value('balance');
+        return ['before' => $balance, 'after' => $balance];
+    }
+
+    /**
+     * 是否 MySQL 1062 唯一键冲突。think-orm 把驱动码塞进 debug data，getCode() 恒为 10501。
+     */
+    protected static function isDuplicateKey(\Throwable $e): bool
+    {
+        if (!$e instanceof \think\db\exception\PDOException) {
+            return false;
+        }
+        $info = $e->getData()['PDO Error Info'] ?? [];
+        return (int) ($info['Driver Error Code'] ?? 0) === 1062;
     }
 }

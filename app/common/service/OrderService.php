@@ -522,19 +522,50 @@ class OrderService
     {
         $current = (int) $order->getAttr('status');
         if ($status === Order::ST_SUCCESS) {
+            // 已成功/已退款/已取消的单不能再走人工发货，否则重复点一次就多发一批卡
+            if (!in_array($current, [Order::ST_WAIT_DEAL, Order::ST_DEALING], true)) {
+                throw_fail('当前状态不可处理成功', 1);
+            }
+            $orderId = (int) $order->getAttr('id');
             // 手动发货/处理成功：重试自动发货（卡密单）；其他类型直接置成功
             if ((int) $order->getAttr('goods_type') === 1) {
-                Order::where('id', (int) $order->getAttr('id'))->update(['status' => Order::ST_WAIT_DEAL, 'update_time' => time()]);
+                $assigned = Card::where('order_id', $orderId)->count();
+                $quantity = (int) $order->getAttr('quantity');
+                if ($assigned > 0) {
+                    // 卡已绑到本单：只补推进状态，绝不重新分配（含退款冻结的卡，故不按 status 过滤）
+                    if ($assigned < $quantity) {
+                        throw_fail('订单已分配 ' . $assigned . ' 张卡密（应发 ' . $quantity . ' 张），数据异常，请人工核对后再处理', 1);
+                    }
+                    $affected = Order::where('id', $orderId)
+                        ->whereIn('status', [Order::ST_WAIT_DEAL, Order::ST_DEALING])
+                        ->update(['status' => Order::ST_SUCCESS, 'finish_time' => time(), 'reader' => (string) $adminId, 'update_time' => time()]);
+                    if ($affected === 0) {
+                        throw_fail('订单状态已变更，请刷新后重试', 1);
+                    }
+                    self::log($order, '已分配卡密 ' . $assigned . ' 张，跳过重复发货');
+                    self::settleAfterSuccess(Order::findOrEmpty($orderId));
+                    return;
+                }
+                // 条件回退到待处理：0 行说明状态已被并发改走，此时不能发货
+                $affected = Order::where('id', $orderId)
+                    ->whereIn('status', [Order::ST_WAIT_DEAL, Order::ST_DEALING])
+                    ->update(['status' => Order::ST_WAIT_DEAL, 'update_time' => time()]);
+                if ($affected === 0) {
+                    throw_fail('订单状态已变更，请刷新后重试', 1);
+                }
                 self::deliver($order);
-                $fresh = Order::findOrEmpty((int) $order->getAttr('id'));
+                $fresh = Order::findOrEmpty($orderId);
                 if ((int) $fresh->getAttr('status') !== Order::ST_SUCCESS) {
                     throw_fail('发货失败：卡密库存不足或未配置卡库', 1);
                 }
                 return;
             }
-            Order::where('id', (int) $order->getAttr('id'))
+            $affected = Order::where('id', $orderId)
                 ->whereIn('status', [Order::ST_WAIT_DEAL, Order::ST_DEALING])
                 ->update(['status' => Order::ST_SUCCESS, 'finish_time' => time(), 'reader' => (string) $adminId, 'update_time' => time()]);
+            if ($affected === 0) {
+                throw_fail('订单状态已变更，请刷新后重试', 1);
+            }
             self::log($order, '管理员手动处理成功');
             // 分销佣金 / 分站抽成 / 供货货款结算（幂等）
             self::settleAfterSuccess(Order::findOrEmpty((int) $order->getAttr('id')));

@@ -1029,8 +1029,9 @@ CREATE TABLE `mks_member_money` (
   `mark` varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
   `order_id` int NOT NULL DEFAULT 0 COMMENT '关联订单ID',
   `admin_id` int NOT NULL DEFAULT 0 COMMENT '操作管理员ID（后台加减款时）',
-  `only_order_no` varchar(255) DEFAULT '' COMMENT '唯一单号（幂等防重复入账）',
+  `only_order_no` varchar(255) DEFAULT NULL COMMENT '唯一单号（幂等防重复入账；无键写 NULL，空串会互相冲突）',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_only_order_no` (`only_order_no`),
   KEY `uid` (`uid`),
   KEY `extend_id` (`extend_id`),
   KEY `order_id` (`order_id`)
