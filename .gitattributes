@@ -1,0 +1,3 @@
+# 部署到 Linux 的脚本：即使在 Windows 工作副本也必须保持 LF。
+# core.autocrlf=true 会把它们转成 CRLF，上传后 dash 会把 \r 当成参数的一部分而解析失败。
+*.sh text eol=lf
