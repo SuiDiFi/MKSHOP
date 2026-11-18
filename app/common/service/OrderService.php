@@ -279,7 +279,9 @@ class OrderService
         $orderSn = (string) $payOrder->getAttr('order_sn');
         $lockKey = 'pay:balance:' . $orderSn;
         $redis   = Cache::store('redis')->handler();
-        if (!$redis->set($lockKey, 1, ['nx', 'ex' => 60])) {
+        // 锁值用唯一 token：释放时 Lua 校验持锁者，防持锁超 60s 过期后误删他人锁（§5.3）
+        $lockToken = bin2hex(random_bytes(16));
+        if (!$redis->set($lockKey, $lockToken, ['nx', 'ex' => 60])) {
             throw_fail('正在支付，请勿重复操作', 1);
         }
         try {
@@ -308,7 +310,12 @@ class OrderService
             }
             self::paySuccessOrder($payOrder);
         } finally {
-            $redis->del($lockKey);
+            // 仅持锁者可删（原子 Lua）；锁已过期被他人重新持有时不动
+            $redis->eval(
+                "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+                [$lockKey, $lockToken],
+                1
+            );
         }
     }
 
@@ -418,8 +425,8 @@ class OrderService
             // 扣库存（重算口径，防漂移；goods.stock_num 为冗余汇总，重算防 unsigned 下溢）
             $cateNum  = Card::where('card_cate_id', $cateId)->where('status', 1)->count();
             CardCate::where('id', $cateId)->update(['card_num' => $cateNum, 'update_time' => time()]);
-            $stockNum = max(0, (int) $stock->getAttr('stock_num') - $qty);
-            GoodsStock::where('id', (int) $stock->getAttr('id'))->update(['stock_num' => $stockNum]);
+            // goods_stock.stock_num 与卡库可用数同口径、事务内重算（旧实现拿事务外旧值减法绝对写回，并发下后写覆盖先写，§5.2）
+            GoodsStock::where('id', (int) $stock->getAttr('id'))->update(['stock_num' => $cateNum]);
             $goodsId = (int) $order->getAttr('goods_id');
             $totalStock = (int) Db::name('goods_stock')->where('goods_id', $goodsId)->where('status', 1)->sum('stock_num');
             Db::name('goods')->where('id', $goodsId)->inc('sales_num', $qty)->update(['stock_num' => $totalStock]);
