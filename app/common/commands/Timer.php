@@ -16,6 +16,7 @@ use app\common\model\SysTimer;
 use app\common\service\DockBuService;
 use app\common\service\DockSyncService;
 use app\common\service\StaticsService;
+use app\common\service\StockAuditService;
 use think\console\Command;
 use think\console\Input;
 use think\console\Output;
@@ -76,6 +77,14 @@ class Timer extends Command
             'statics_order' => function () {
                 $count = StaticsService::aggregate(StaticsService::AGG_DAYS);
                 return sprintf('days=%d,until=%s', $count, date('Y-m-d'));
+            },
+            // 库存每日对账（§5.2 收口配套：卡数 vs goods_stock vs goods 只读比对，漂移仅告警不改数）
+            'stock_audit' => function () {
+                $r = StockAuditService::audit();
+                return sprintf(
+                    'cates=%d,cateDrift=%d,stocks=%d,stockDrift=%d,goods=%d,goodsDrift=%d,total=%d',
+                    $r['cates'], $r['cateDrift'], $r['stocks'], $r['stockDrift'], $r['goods'], $r['goodsDrift'], $r['total']
+                );
             },
         ];
 
