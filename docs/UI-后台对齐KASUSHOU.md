@@ -356,6 +356,20 @@
 
 本地 `vite build` 通过（最新一轮 `goodsAdd-DgVyoO22.js` 22.74 kB / `index-C3GrhNHN.js`，与线上入口仅差一行被 `tags_id`/`tpl_id` 兜底覆盖的死赋值）。本轮改动已提交并推送：`f0960f4`（`main` → origin，2026-11-14）。
 
+### 5.10 第九轮续：商品列表行内交互三件套（UI #9 范式落地，2026-11-20）
+
+改动 [goodsList.vue](../admin-web/src/views/goods/goodsList.vue)（+127/−10）与 [mksStatusTabs.vue](../admin-web/src/components/mksStatusTabs.vue)：
+
+* **行内快捷改值**：排序/售价/库存三列采用参考侧 `row.xxxEdit` 机制（非编辑态不插输入框；点击值或 edit 图标进入编辑态，局部指令 `vFocus` 自动聚焦，回车/失焦提交 `goodsModify`，值不变不发请求、成功后**不整表刷新**）。后端 `goods/modify` 白名单含 `sort`/`real_price`/`stock_num`。
+* **售价/库存双段胶囊**：合并原「面值/售价」+「库存」两列为一列双胶囊（dark=`#1890FF` 底白字 radius 3px 0 0 3px + light=`#E8F4FF` 底蓝字 radius 0 3px 3px 0，20px 高 / padding 0 5px / 12px / cursor pointer，与对方实测逐项一致）；dark=现值、light=面值/预警值；库存按 `stock_num<=warn_num` 切 `is-warn` 红（#F56C6C）；每行 2 个 edit 图标。
+* **行内复制**：ID 后紧跟 `file-copy-line` 图标（复用 orderList 的 `mks-icon` + `copyText` 范式）。
+* **页签修正**：计数并入文案（去掉独立灰色 `.tab-count`）、header margin-bottom 4→15px（组件级，10 个使用页同步生效）；**顺带修掉首次进入无激活态的缺陷**（`query.status=null` 与 pane name '' 不匹配 → 组件 `modelValue ?? ''` 兜底）。
+* **工具栏语义色**：添加商品 success→primary。
+
+**验收**：`npm run build` ×2（16.20 kB / goodsList-C3q7o6Nf.js）→ 原子切换 ×2（备份 `admin-web.bak-20261120130646`、`admin-web.bak-20261120224814`）→ 冒烟 200/401。**浏览器 DOM 量测（超管 token，只读）**：首轮 a–g 8 项全 PASS（tab-count=0、计数入文案、header 15px、胶囊 20px/0 5px/12px/#1890FF、is-warn 红色态、复制图标、行内编辑态进出且零写请求）；首轮附加观察发现激活态缺失 → 修复 → 复测 3/3 PASS（is-active + active-bar 73px）。真实商品 21 全程只读。提交 `ddf6419`。
+
+**范围说明**：#9 三件套（行内改值/复制/胶囊）范式已在商品列表落地；其余列表页铺开、`mksQueryForm` 尺寸收敛（316px/label 100px/折叠 3 项）与页码格 30×28 仍待做（附 B 清单 ⑤⑥）。
+
 
 
 
