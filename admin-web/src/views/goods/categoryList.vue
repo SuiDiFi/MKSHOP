@@ -7,14 +7,21 @@
     </template>
 
     <template #toolbar>
-      <el-button size="small" type="success" @click="openForm()">新增分类</el-button>
+      <el-button size="small" type="primary" @click="openForm()">新增分类</el-button>
       <el-button size="small" plain @click="load">刷新</el-button>
     </template>
 
       <el-table :data="tree" border row-key="id" v-loading="loading"
         :tree-props="{ children: 'children' }" default-expand-all>
         <template #empty><mks-empty text="还没有商品分类" hint="先建一个顶级分类，商品才能归类上架" /></template>
-        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column label="ID" width="96">
+          <template #default="{ row }">
+            <span>{{ row.id }}</span>
+            <el-link underline="never" class="cell-copy" title="复制ID" @click="copyText(row.id)">
+              <mks-icon name="file-copy-line" :size="14" />
+            </el-link>
+          </template>
+        </el-table-column>
         <el-table-column label="分类名称" min-width="220">
           <template #default="{ row }">
             <span :style="{ color: row.color || '' }">{{ row.name }}</span>
@@ -28,10 +35,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="goods_num" label="商品数" width="90" />
-        <el-table-column prop="sort" label="排序" width="80">
+        <el-table-column label="排序" width="80">
           <template #default="{ row }">
-            <el-input-number v-model="row.sort" size="small" :controls="false" style="width: 60px"
-              @change="(v) => doModify(row, 'sort', v)" />
+            <!-- 行内快捷改值（原常显输入框改为参考侧 row.xxxEdit 机制） -->
+            <el-input v-if="row.sortEdit" v-model="row.sortDraft" v-focus size="small" style="width: 60px"
+              @keyup.enter="commitInline(row, 'sort')" @blur="commitInline(row, 'sort')" />
+            <span v-else class="inline-value" @click="startInline(row, 'sort')">{{ row.sort }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="140" fixed="right">
@@ -79,6 +88,8 @@ import { ElMessage } from 'element-plus';
 import { categoryList, categoryCreate, categorySave, categoryDelete, categoryModify } from '@/api';
 import mksPage from '@/components/mksPage.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksIcon from '@/components/mksIcon.vue';
+import { useInlineEdit } from '@/utils/inlineEdit';
 
 const router = useRouter();
 const goCfg = (p) => router.push(p);
@@ -136,6 +147,8 @@ async function doModify(row, field, value) {
   await categoryModify(row.id, field, value);
   ElMessage.success('已更新');
 }
+
+const { vFocus, startInline, commitInline, copyText } = useInlineEdit(categoryModify);
 
 async function doDelete(id) {
   await categoryDelete(id);

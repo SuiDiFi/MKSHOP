@@ -17,12 +17,19 @@
     </template>
 
     <template #toolbar>
-      <el-button size="small" type="success" @click="openForm()">添加参数模板</el-button>
+      <el-button size="small" type="primary" @click="openForm()">添加参数模板</el-button>
     </template>
 
       <el-table :data="list" border v-loading="loading">
         <template #empty><mks-empty text="还没有参数模板" hint="添加模板后，到商品编辑页勾选即可启用" /></template>
-        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column label="ID" width="96">
+          <template #default="{ row }">
+            <span>{{ row.id }}</span>
+            <el-link underline="never" class="cell-copy" title="复制ID" @click="copyText(row.id)">
+              <mks-icon name="file-copy-line" :size="14" />
+            </el-link>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="模板名称" min-width="180" />
         <el-table-column label="输入项" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">{{ row.input_labels || '—' }}</template>
@@ -35,7 +42,14 @@
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="(v) => doModify(row, 'status', v)" />
           </template>
         </el-table-column>
-        <el-table-column prop="sort" label="权重" width="80" />
+        <el-table-column label="权重" width="80">
+          <template #default="{ row }">
+            <!-- 行内快捷改值（参考侧 row.xxxEdit 机制） -->
+            <el-input v-if="row.sortEdit" v-model="row.sortDraft" v-focus size="small" style="width: 58px"
+              @keyup.enter="commitInline(row, 'sort')" @blur="commitInline(row, 'sort')" />
+            <span v-else class="inline-value" @click="startInline(row, 'sort')">{{ row.sort }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="创建时间" width="160">
           <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
         </el-table-column>
@@ -87,9 +101,12 @@ import { goodsTplIndex, goodsTplCreate, goodsTplSave, goodsTplDelete, goodsTplMo
 import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksIcon from '@/components/mksIcon.vue';
+import { useInlineEdit } from '@/utils/inlineEdit';
 
 const router = useRouter();
 const goCfg = (p) => router.push(p);
+const { vFocus, startInline, commitInline, copyText } = useInlineEdit(goodsTplModify);
 
 const loading = ref(false);
 const saving = ref(false);

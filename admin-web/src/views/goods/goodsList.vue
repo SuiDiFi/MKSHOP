@@ -213,6 +213,7 @@ import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksStatusTabs from '@/components/mksStatusTabs.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
 import mksIcon from '@/components/mksIcon.vue';
+import { useInlineEdit } from '@/utils/inlineEdit';
 
 const router = useRouter();
 const loading = ref(false);
@@ -225,31 +226,8 @@ const provideOptions = ref([]);
 const categoryTree = ref([]);
 const statusCounts = ref({ total: 0, by_status: {}, recycle: 0, stock_warn: 0 });
 
-/** 行内编辑输入框自动聚焦（局部指令：v-focus） */
-const vFocus = {
-  mounted: (el) => el.querySelector('input')?.focus(),
-};
-
-/** 行内快捷改值（参考侧 row.xxxEdit 机制）：进入编辑态 / 提交（值不变则仅退出，成功后不整表刷新） */
-function startInline(row, field) {
-  row[`${field}Draft`] = row[field];
-  row[`${field}Edit`] = true;
-}
-async function commitInline(row, field) {
-  if (!row[`${field}Edit`]) return;
-  row[`${field}Edit`] = false;
-  const draft = String(row[`${field}Draft`] ?? '').trim();
-  if (draft === String(row[field] ?? '') || draft === '') return; // 未变化不请求
-  await goodsModify(row.id, field, draft);
-  row[field] = draft;
-  ElMessage.success('已更新');
-}
-
-async function copyText(text) {
-  if (!text) return;
-  await navigator.clipboard.writeText(String(text));
-  ElMessage.success('复制成功');
-}
+/** 行内快捷改值 + 行内复制（共享工具：utils/inlineEdit.js，铺开范式） */
+const { vFocus, startInline, commitInline, copyText } = useInlineEdit(goodsModify);
 
 /** 状态页签 = 全部 + 字典各项（带真实数量）+ 回收站 */
 const statusTabDefs = computed(() => {
@@ -444,18 +422,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-/* 行内复制/编辑图标（对齐对方：ID 后紧跟复制图标） */
-.cell-copy,
-.cell-edit {
-  margin-left: 4px;
-  color: var(--mks-text-secondary);
-  vertical-align: middle;
-}
-.cell-copy :deep(.mks-icon),
-.cell-edit :deep(.mks-icon) {
-  vertical-align: -2px;
-}
-.inline-value { cursor: pointer; }
+/* 行内复制/编辑图标与行内值：全局公共样式（styles/main.css「列表页行内交互」段） */
 /* 售价/库存双段胶囊（对方实测：20px 高、padding 0 5px、12px、dark+light 拼接圆角、cursor pointer） */
 .cap-line {
   display: flex;

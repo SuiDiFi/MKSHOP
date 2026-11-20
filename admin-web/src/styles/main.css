@@ -317,3 +317,19 @@ a {
     display: none !important;
   }
 }
+
+/* ── 列表页行内交互（铺开用公共样式：行内复制/行内快捷改值，配合 utils/inlineEdit.js）── */
+.cell-copy,
+.cell-edit {
+  margin-left: 4px;
+  color: var(--mks-text-secondary);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.cell-copy i,
+.cell-edit i {
+  vertical-align: -2px;
+}
+.inline-value {
+  cursor: pointer;
+}

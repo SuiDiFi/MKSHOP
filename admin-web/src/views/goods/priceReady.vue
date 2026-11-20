@@ -22,12 +22,19 @@
     </template>
 
     <template #toolbar>
-      <el-button size="small" type="success" @click="openForm()">添加定价模板</el-button>
+      <el-button size="small" type="primary" @click="openForm()">添加定价模板</el-button>
     </template>
 
       <el-table :data="list" border v-loading="loading">
         <template #empty><mks-empty text="还没有定价模板" hint="添加模板并绑定商品后，该商品才参与取价" /></template>
-        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column label="ID" width="96">
+          <template #default="{ row }">
+            <span>{{ row.id }}</span>
+            <el-link underline="never" class="cell-copy" title="复制ID" @click="copyText(row.id)">
+              <mks-icon name="file-copy-line" :size="14" />
+            </el-link>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="名称" min-width="180" />
         <el-table-column label="绑定商品" min-width="180">
           <template #default="{ row }">
@@ -53,7 +60,14 @@
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="(v) => doModify(row, 'status', v)" />
           </template>
         </el-table-column>
-        <el-table-column prop="sort" label="权重" width="80" />
+        <el-table-column label="权重" width="80">
+          <template #default="{ row }">
+            <!-- 行内快捷改值（参考侧 row.xxxEdit 机制）；加价规则含类型语义，改值走编辑弹窗 -->
+            <el-input v-if="row.sortEdit" v-model="row.sortDraft" v-focus size="small" style="width: 58px"
+              @keyup.enter="commitInline(row, 'sort')" @blur="commitInline(row, 'sort')" />
+            <span v-else class="inline-value" @click="startInline(row, 'sort')">{{ row.sort }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openForm(row)">编辑</el-button>
@@ -122,9 +136,12 @@ import { priceReadyIndex, priceReadyCreate, priceReadySave, priceReadyDelete, pr
 import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksIcon from '@/components/mksIcon.vue';
+import { useInlineEdit } from '@/utils/inlineEdit';
 
 const router = useRouter();
 const goCfg = (p) => router.push(p);
+const { vFocus, startInline, commitInline, copyText } = useInlineEdit(priceReadyModify);
 
 const loading = ref(false);
 const saving = ref(false);
