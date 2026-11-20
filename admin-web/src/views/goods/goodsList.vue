@@ -73,7 +73,7 @@
 
     <!-- 批量操作（统一左上） -->
     <template #toolbar>
-      <el-button size="small" type="success" @click="goAdd">添加商品</el-button>
+      <el-button size="small" type="primary" @click="goAdd">添加商品</el-button>
       <el-button size="small" :disabled="!selection.length" type="danger" plain @click="batchRecycle">批量移至回收站({{ selection.length }})</el-button>
       <el-button size="small" plain @click="filterToday">今日创建</el-button>
       <el-button size="small" plain @click="doExport">导出</el-button>
@@ -85,8 +85,22 @@
       <el-table :data="list" size="small" v-loading="loading" @selection-change="(s) => (selection = s)">
         <template #empty><mks-empty text="没有符合条件的商品" hint="试试放宽筛选条件，或先添加商品" /></template>
         <el-table-column type="selection" width="42" fixed="left" />
-        <el-table-column prop="sort" label="排序" width="62" />
-        <el-table-column prop="id" label="ID" width="62" />
+        <el-table-column label="排序" width="72">
+          <template #default="{ row }">
+            <!-- 行内快捷改值（参考侧 row.xxxEdit 机制：非编辑态不插输入框） -->
+            <el-input v-if="row.sortEdit" v-model="row.sortDraft" v-focus size="small" style="width: 58px"
+              @keyup.enter="commitInline(row, 'sort')" @blur="commitInline(row, 'sort')" />
+            <span v-else class="inline-value" @click="startInline(row, 'sort')">{{ row.sort }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="ID" width="92">
+          <template #default="{ row }">
+            <span>{{ row.id }}</span>
+            <el-link underline="never" class="cell-copy" title="复制ID" @click="copyText(row.id)">
+              <mks-icon name="file-copy-line" :size="14" />
+            </el-link>
+          </template>
+        </el-table-column>
         <el-table-column label="商品图" width="64">
           <template #default="{ row }">
             <el-image v-if="row.goods_img" :src="row.goods_img" style="width: 36px; height: 36px" fit="cover"
@@ -114,13 +128,41 @@
         <el-table-column label="定价成本" width="90">
           <template #default="{ row }">{{ row.cost_value }}</template>
         </el-table-column>
-        <el-table-column label="面值/售价" width="130">
+        <el-table-column label="售价 / 库存" width="168">
           <template #default="{ row }">
-            <span style="text-decoration: line-through; color: #999">{{ row.face_value }}</span>
-            <b style="margin-left: 4px; color: #f56c6c">{{ row.real_price }}</b>
+            <!-- 双段胶囊（对齐对方：dark+light 各 20px 高 12px padding0 5px，库存按 warn_num 预警切色） -->
+            <div class="cap-line">
+              <template v-if="row.real_priceEdit">
+                <el-input v-model="row.real_priceDraft" v-focus size="small" style="width: 110px"
+                  @keyup.enter="commitInline(row, 'real_price')" @blur="commitInline(row, 'real_price')" />
+              </template>
+              <template v-else>
+                <span class="cap-group">
+                  <span class="cap cap-dark" @click="startInline(row, 'real_price')">{{ row.real_price }}</span>
+                  <span class="cap cap-light" @click="startInline(row, 'real_price')">{{ row.face_value }}</span>
+                </span>
+                <el-link underline="never" class="cell-edit" title="修改售价" @click="startInline(row, 'real_price')">
+                  <mks-icon name="edit-line" :size="14" />
+                </el-link>
+              </template>
+            </div>
+            <div class="cap-line">
+              <template v-if="row.stock_numEdit">
+                <el-input v-model="row.stock_numDraft" v-focus size="small" style="width: 110px"
+                  @keyup.enter="commitInline(row, 'stock_num')" @blur="commitInline(row, 'stock_num')" />
+              </template>
+              <template v-else>
+                <span class="cap-group" :class="{ 'is-warn': Number(row.stock_num) <= Number(row.warn_num) }">
+                  <span class="cap cap-dark" @click="startInline(row, 'stock_num')">{{ row.stock_num }}</span>
+                  <span class="cap cap-light">预警 {{ row.warn_num || 0 }}</span>
+                </span>
+                <el-link underline="never" class="cell-edit" title="修改库存" @click="startInline(row, 'stock_num')">
+                  <mks-icon name="edit-line" :size="14" />
+                </el-link>
+              </template>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="stock_num" label="库存" width="70" />
         <el-table-column prop="sales_num" label="销量" width="70" />
         <el-table-column label="所属供货商" width="100">
           <template #default="{ row }">{{ Number(row.uid) > 0 ? '#' + row.uid : '平台' }}</template>
@@ -170,6 +212,7 @@ import mksPage from '@/components/mksPage.vue';
 import mksQueryForm from '@/components/mksQueryForm.vue';
 import mksStatusTabs from '@/components/mksStatusTabs.vue';
 import mksEmpty from '@/components/mksEmpty.vue';
+import mksIcon from '@/components/mksIcon.vue';
 
 const router = useRouter();
 const loading = ref(false);
@@ -181,6 +224,32 @@ const typeOptions = ref([]);
 const provideOptions = ref([]);
 const categoryTree = ref([]);
 const statusCounts = ref({ total: 0, by_status: {}, recycle: 0, stock_warn: 0 });
+
+/** 行内编辑输入框自动聚焦（局部指令：v-focus） */
+const vFocus = {
+  mounted: (el) => el.querySelector('input')?.focus(),
+};
+
+/** 行内快捷改值（参考侧 row.xxxEdit 机制）：进入编辑态 / 提交（值不变则仅退出，成功后不整表刷新） */
+function startInline(row, field) {
+  row[`${field}Draft`] = row[field];
+  row[`${field}Edit`] = true;
+}
+async function commitInline(row, field) {
+  if (!row[`${field}Edit`]) return;
+  row[`${field}Edit`] = false;
+  const draft = String(row[`${field}Draft`] ?? '').trim();
+  if (draft === String(row[field] ?? '') || draft === '') return; // 未变化不请求
+  await goodsModify(row.id, field, draft);
+  row[field] = draft;
+  ElMessage.success('已更新');
+}
+
+async function copyText(text) {
+  if (!text) return;
+  await navigator.clipboard.writeText(String(text));
+  ElMessage.success('复制成功');
+}
 
 /** 状态页签 = 全部 + 字典各项（带真实数量）+ 回收站 */
 const statusTabDefs = computed(() => {
@@ -375,4 +444,52 @@ onMounted(async () => {
   cursor: pointer;
 }
 .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+/* 行内复制/编辑图标（对齐对方：ID 后紧跟复制图标） */
+.cell-copy,
+.cell-edit {
+  margin-left: 4px;
+  color: var(--mks-text-secondary);
+  vertical-align: middle;
+}
+.cell-copy :deep(.mks-icon),
+.cell-edit :deep(.mks-icon) {
+  vertical-align: -2px;
+}
+.inline-value { cursor: pointer; }
+/* 售价/库存双段胶囊（对方实测：20px 高、padding 0 5px、12px、dark+light 拼接圆角、cursor pointer） */
+.cap-line {
+  display: flex;
+  align-items: center;
+  line-height: 22px;
+}
+.cap-group {
+  display: inline-flex;
+  align-items: center;
+}
+.cap {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+}
+.cap-dark {
+  background: #1890ff;
+  color: #fff;
+  border-radius: 3px 0 0 3px;
+}
+.cap-light {
+  background: #e8f4ff;
+  color: #1890ff;
+  border-radius: 0 3px 3px 0;
+}
+.cap-group.is-warn .cap-dark {
+  background: #f56c6c;
+}
+.cap-group.is-warn .cap-light {
+  background: #fef0f0;
+  color: #f56c6c;
+}
 </style>

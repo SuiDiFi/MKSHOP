@@ -1,13 +1,11 @@
 <template>
   <div class="mks-status-tabs">
     <!-- 上层：带数量角标的页签 -->
-    <el-tabs v-if="tabs && tabs.length" :model-value="modelValue" class="mks-tabs" @update:model-value="(v) => emit('update:modelValue', v)">
+    <el-tabs v-if="tabs && tabs.length" :model-value="modelValue ?? ''" class="mks-tabs" @update:model-value="(v) => emit('update:modelValue', v)">
       <el-tab-pane v-for="t in tabs" :key="t.value" :name="t.value">
         <template #label>
-          <span class="tab-lab">
-            {{ t.label }}
-            <span v-if="t.count !== undefined && t.count !== null" class="tab-count">({{ t.count }})</span>
-          </span>
+          <!-- 计数写在文案里（对齐对方「全部商品(9107)」，去掉独立灰色的 .tab-count） -->
+          <span class="tab-lab">{{ t.label }}<template v-if="t.count !== undefined && t.count !== null">({{ t.count }})</template></span>
         </template>
       </el-tab-pane>
     </el-tabs>
@@ -45,13 +43,14 @@ const emit = defineEmits(['update:modelValue', 'update:pillValue']);
 
 <style scoped>
 .mks-status-tabs {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 .mks-tabs {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 .mks-tabs :deep(.el-tabs__header) {
-  margin-bottom: 0;
+  /* 对齐对方：页签 header 与表格间距 15px */
+  margin-bottom: 15px;
 }
 .mks-tabs :deep(.el-tabs__item) {
   height: 40px;
@@ -63,11 +62,6 @@ const emit = defineEmits(['update:modelValue', 'update:pillValue']);
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
-}
-.tab-count {
-  margin-left: 4px;
-  color: var(--mks-text-placeholder);
-  font-size: var(--mks-font-size-table);
 }
 /* 胶囊里的数量要拉开间距（对方为“交易成功 3”，不是粘连的“交易成功3”） */
 .pill-count {
