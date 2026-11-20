@@ -20,6 +20,8 @@ Thumbs.db
 # 凭据与密钥（严禁入库）
 *.pem
 *.key
+.env.compose
+.env.compose.local
 deploy/secrets/
 docker/.env
 
