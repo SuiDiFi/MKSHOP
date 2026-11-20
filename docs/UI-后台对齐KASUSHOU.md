@@ -368,7 +368,9 @@
 
 **验收**：`npm run build` ×2（16.20 kB / goodsList-C3q7o6Nf.js）→ 原子切换 ×2（备份 `admin-web.bak-20261120130646`、`admin-web.bak-20261120224814`）→ 冒烟 200/401。**浏览器 DOM 量测（超管 token，只读）**：首轮 a–g 8 项全 PASS（tab-count=0、计数入文案、header 15px、胶囊 20px/0 5px/12px/#1890FF、is-warn 红色态、复制图标、行内编辑态进出且零写请求）；首轮附加观察发现激活态缺失 → 修复 → 复测 3/3 PASS（is-active + active-bar 73px）。真实商品 21 全程只读。提交 `ddf6419`。
 
-**范围说明**：#9 三件套（行内改值/复制/胶囊）范式已在商品列表落地；其余列表页铺开、`mksQueryForm` 尺寸收敛（316px/label 100px/折叠 3 项）与页码格 30×28 仍待做（附 B 清单 ⑤⑥）。
+**范围说明**：#9 三件套（行内改值/复制/胶囊）范式已在商品列表落地；`mksQueryForm` 尺寸收敛（316px/label 100px/折叠 3 项）与页码格 30×28 仍待做（附 B 清单 ⑤⑥）。
+
+**铺开批次 1（2026-11-20，提交 `c74a262`）**：抽公共工具 [utils/inlineEdit.js](../admin-web/src/utils/inlineEdit.js)（`useInlineEdit(modifyFn)` 返回 vFocus/startInline/commitInline/copyText；goodsList 同步重构为引用），行内交互公共样式入 [styles/main.css](../admin-web/src/styles/main.css)（「列表页行内交互」段）。铺开三页：**商品分类**（附 B 点名的常显 `el-input-number` 改为行内改值机制）、**参数模板**、**定价模板**（各：ID 复制图标 + sort 行内改值 + 添加按钮语义色；定价模板的 `cha_price` 含类型语义，改值仍走编辑弹窗）。部署 `admin-web.bak-20261120235629`，浏览器抽查 4/4 PASS（分类页行内编辑开合 + 复制图标 + 无残留常显输入框；商品列表胶囊/页签回归），参数模板页线上 0 行按规则跳过。
 
 
 
