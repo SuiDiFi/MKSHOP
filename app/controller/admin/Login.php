@@ -10,6 +10,7 @@ use app\common\model\Admin;
 use app\common\model\AdminLog;
 use mks\middleware\AdminAuth;
 use mks\util\Jwt;
+use mks\util\LoginThrottle;
 
 class Login extends Base
 {
@@ -23,14 +24,17 @@ class Login extends Base
         if ($username === '' || $password === '') {
             return $this->fail('请输入账号和密码');
         }
+        LoginThrottle::check('admin', $username);
 
         $admin = Admin::where('username', $username)->where('delete_time', 0)->findOrEmpty();
         if ($admin->isEmpty() || !$admin->verifyPassword($password)) {
+            LoginThrottle::fail('admin', $username);
             return $this->fail('账号或密码错误');
         }
         if ((int) $admin->getAttr('status') !== 1) {
             return $this->fail('账号已被禁用');
         }
+        LoginThrottle::clear('admin', $username);
 
         $token = Jwt::issue('admin', (int) $admin->getAttr('id'));
 

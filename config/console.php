@@ -12,5 +12,6 @@ return [
         'mks:docksync'   => \app\common\commands\DockSync::class,
         'mks:timer'      => \app\common\commands\Timer::class,
         'mks:commission' => \app\common\commands\Commission::class,
+        'mks:regress'    => \app\common\commands\Regress::class,
     ],
 ];

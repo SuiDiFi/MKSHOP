@@ -9,6 +9,7 @@ namespace app\controller\front;
 use app\common\model\Member;
 use mks\BaseController;
 use mks\util\Jwt;
+use mks\util\LoginThrottle;
 
 class MemberController extends BaseController
 {
@@ -22,13 +23,16 @@ class MemberController extends BaseController
         if ($username === '' || $password === '') {
             return $this->fail('请输入账号和密码');
         }
+        LoginThrottle::check('member', $username);
         $member = Member::where('username', $username)->where('delete_time', 0)->findOrEmpty();
         if ($member->isEmpty() || !$member->verifyPassword($password)) {
+            LoginThrottle::fail('member', $username);
             return $this->fail('账号或密码错误');
         }
         if ((int) $member->getAttr('status') !== 1 || (int) $member->getAttr('close') === 1) {
             return $this->fail('账号已被禁用');
         }
+        LoginThrottle::clear('member', $username);
         $jwt  = Jwt::issue('member', (int) $member->getAttr('id'));
         $save = [
             'last_time'   => time(),
